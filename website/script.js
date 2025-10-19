@@ -1294,6 +1294,152 @@ document.addEventListener('keydown', function(event) {
 
 console.log('Alert action modals loaded successfully');
 
+// ...existing code...
+
+// --------- API INTEGRATION (inject) ----------
+const API_BASE = (function() {
+    // Adjust when deploying
+    return 'http://localhost:8000';
+})();
+
+async function postAlertToBackend(alertData) {
+    const fd = new FormData();
+    // map fields to form data (backend expects simple keys; adjust if backend schema differs)
+    fd.append('priority', alertData.priority || '');
+    fd.append('title', alertData.title || '');
+    fd.append('type', alertData.type || '');
+    fd.append('location', alertData.location || '');
+    fd.append('parish', alertData.parish || '');
+    fd.append('description', alertData.description || '');
+    fd.append('suspectDescription', alertData.suspectDescription || '');
+    fd.append('vehicleInfo', alertData.vehicleInfo || '');
+    fd.append('timestamp', alertData.timestamp || new Date().toISOString());
+    fd.append('createdBy', alertData.createdBy || 'web-ui');
+    fd.append('status', alertData.status || 'Active');
+    // append agencies as repeated fields
+    if (Array.isArray(alertData.agencies)) {
+        alertData.agencies.forEach(a => fd.append('agencies', a));
+    }
+
+    // if there's a file input with id "alertMedia", append first file
+    const mediaInput = document.getElementById('alertMedia');
+    if (mediaInput && mediaInput.files && mediaInput.files.length) {
+        fd.append('media', mediaInput.files[0]);
+    }
+
+    const res = await fetch(`${API_BASE}/reports`, {
+        method: 'POST',
+        body: fd
+    });
+
+    if (!res.ok) {
+        const text = await res.text().catch(()=>null);
+        throw new Error(text || `HTTP ${res.status}`);
+    }
+
+    return res.json();
+}
+
+// Replace existing handler to attempt backend POST then fallback to local behavior
+async function handleCreateAlert(event) {
+    event.preventDefault();
+    console.log('handleCreateAlert called (API-aware)');
+
+    // Get selected agencies
+    const agencyCheckboxes = document.querySelectorAll('input[name="agencies"]:checked');
+    const selectedAgencies = Array.from(agencyCheckboxes).map(cb => cb.value);
+
+    if (selectedAgencies.length === 0) {
+        alert('Please select at least one agency to notify.');
+        return;
+    }
+
+    const alertData = {
+        priority: document.querySelector('input[name="priority"]:checked').value,
+        title: document.getElementById('alertTitle').value,
+        type: document.getElementById('alertType').value,
+        location: document.getElementById('alertLocation').value,
+        parish: document.getElementById('alertParish').value,
+        description: document.getElementById('alertDescription').value,
+        suspectDescription: document.getElementById('suspectDescription').value,
+        vehicleInfo: document.getElementById('vehicleInfo').value,
+        agencies: selectedAgencies,
+        sendSMS: document.getElementById('sendSMS') ? document.getElementById('sendSMS').checked : false,
+        publicAlert: document.getElementById('publicAlert') ? document.getElementById('publicAlert').checked : false,
+        timestamp: new Date().toISOString(),
+        createdBy: localStorage.getItem('userEmail') || 'admin@safecity.com',
+        status: 'Active',
+        alertId: 'ALT-' + Date.now()
+    };
+
+    // Try sending to backend, fallback to local flow on error
+    try {
+        const created = await postAlertToBackend(alertData);
+        console.log('Alert created on backend:', created);
+
+        // prefer backend returned object when rendering to list
+        const renderData = (created && (created._id || created.id)) ? Object.assign({}, alertData, created) : alertData;
+
+        alert(`✅ Server: Alert created (${renderData.id || renderData._id || renderData.alertId || 'OK'})`);
+        addAlertToList(renderData);
+        showAlertNotification(renderData);
+        closeCreateAlertModal();
+
+        // optional: refresh reports table if you add fetchReports() usage elsewhere
+        if (typeof fetchReports === 'function') {
+            fetchReports();
+        }
+        return;
+    } catch (err) {
+        console.warn('Backend create failed, falling back to local behavior:', err);
+    }
+
+    // --- fallback local behavior (original) ---
+    const priorityText = alertData.priority.charAt(0).toUpperCase() + alertData.priority.slice(1);
+    const priorityEmoji = {
+        'critical': '🚨',
+        'high': '⚠️',
+        'medium': '⚡'
+    }[alertData.priority];
+
+    const agenciesList = selectedAgencies.map(a => `- ${a}`).join('\n');
+    alert(`${priorityEmoji} ALERT CREATED SUCCESSFULLY!\n\nPriority: ${priorityText}\nTitle: ${alertData.title}\nLocation: ${alertData.location}, ${getParishName(alertData.parish)}\n\nNotifying:\n${agenciesList}\n\nAlert ID: ${alertData.alertId}`);
+
+    addAlertToList(alertData);
+    showAlertNotification(alertData);
+    closeCreateAlertModal();
+}
+
+// Optional: fetch reports list from backend and populate a table/list if you add markup
+async function fetchReports(skip = 0, limit = 50) {
+    try {
+        const res = await fetch(`${API_BASE}/reports?skip=${skip}&limit=${limit}`);
+        if (!res.ok) throw new Error('Failed to fetch reports');
+        const reports = await res.json();
+        console.log('Fetched reports:', reports);
+        // implement UI populate logic if you add a table with id 'reportsTableBody'
+        const tbody = document.getElementById('reportsTableBody');
+        if (!tbody) return;
+        tbody.innerHTML = '';
+        (reports || []).forEach(r => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${r._id || r.id || 'n/a'}</td>
+                <td>${r.incidentType || r.type || r.title || 'N/A'}</td>
+                <td>${r.location || 'N/A'}</td>
+                <td>${new Date(r.timestamp || r.createdAt || Date.now()).toLocaleString()}</td>
+                <td>${r.status || 'Unknown'}</td>
+                <td><button onclick="viewAlertDetails('${r._id || r.id || r.alertId}')">View</button></td>
+            `;
+            tbody.appendChild(tr);
+        });
+    } catch (err) {
+        console.error('fetchReports error:', err);
+    }
+}
+
+// ...existing code...
+
 
 
 
