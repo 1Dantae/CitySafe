@@ -16,13 +16,11 @@ const { width } = Dimensions.get('window');
 interface WelcomeScreenProps {
   onSignIn: () => void;
   onSignUp: () => void;
-  onContinueAsGuest: () => void;
 }
 
 const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
   onSignIn,
   onSignUp,
-  onContinueAsGuest,
 }) => {
   return (
     <LinearGradient
@@ -50,13 +48,6 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
             onPress={onSignUp}
           >
             <Text style={styles.secondaryButtonText}>Create Account</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.button, styles.outlineButton]}
-            onPress={onContinueAsGuest}
-          >
-            <Text style={styles.outlineButtonText}>Continue as Guest</Text>
           </TouchableOpacity>
         </View>
       </View>

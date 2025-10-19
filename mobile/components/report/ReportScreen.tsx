@@ -44,7 +44,7 @@ const incidentTypes = [
 ];
 
 const ReportScreen: React.FC<ReportScreenProps> = ({ onBack }) => {
-  const { addReport } = useUserProfile();
+  const { user, addReport } = useUserProfile();
   const [formData, setFormData] = useState({
     incidentType: '',
     date: '',
@@ -53,9 +53,9 @@ const ReportScreen: React.FC<ReportScreenProps> = ({ onBack }) => {
     description: '',
     witnesses: '',
     anonymous: true,
-    name: '',
-    phone: '',
-    email: '',
+    name: user?.fullName || '', // Pre-fill with user's name if authenticated
+    phone: user?.phone || '',   // Pre-fill with user's phone if authenticated
+    email: user?.email || '',   // Pre-fill with user's email if authenticated
   });
 
   const [showTypePicker, setShowTypePicker] = useState(false);
@@ -135,55 +135,7 @@ const ReportScreen: React.FC<ReportScreenProps> = ({ onBack }) => {
     }
   }
 
-  // Mock function for address suggestions - in a real app, this would call an API
-  const getAddressSuggestions = (input: string) => {
-    // This is a mock implementation - in a real app, this would call an API like Google Places
-    const jamaicaLocations = [
-      "Kingston, Jamaica",
-      "Montego Bay, Jamaica",
-      "Ocho Rios, Jamaica",
-      "Portmore, Jamaica", 
-      "Spanish Town, Jamaica",
-      "New Kingston, Jamaica",
-      "Half Way Tree, Jamaica",
-      "Mandeville, Jamaica",
-      "St. Ann's Bay, Jamaica",
-      "Falmouth, Jamaica",
-      "Runaway Bay, Jamaica",
-      "Negril, Jamaica",
-      "Black River, Jamaica",
-      "Port Antonio, Jamaica",
-      "Mona Commons, Kingston",
-      "Papine, Kingston",
-      "Constant Spring, Kingston",
-      "Liguanea, Kingston",
-      "Cross Roads, Kingston",
-      "Half Way Tree, St. Andrew"
-    ];
-    
-    // Filter locations based on user input
-    return jamaicaLocations.filter(location => 
-      location.toLowerCase().includes(input.toLowerCase())
-    ).slice(0, 5); // Return top 5 matches
-  };
 
-  const handleAddressChange = (text: string) => {
-    setFormData({ ...formData, location: text });
-    
-    // If the user has entered at least 2 characters, show suggestions
-    if (text.length >= 2) {
-      const suggestions = getAddressSuggestions(text);
-      setAddressSuggestions(suggestions);
-      setShowSuggestions(true);
-    } else {
-      setShowSuggestions(false);
-    }
-  };
-
-  const selectAddressSuggestion = (suggestion: string) => {
-    setFormData({ ...formData, location: suggestion });
-    setShowSuggestions(false);
-  };
 
   const handleDateChange = (event: any, selectedDate?: Date) => {
     setShowDatePicker(false);
@@ -278,10 +230,6 @@ const ReportScreen: React.FC<ReportScreenProps> = ({ onBack }) => {
       return false;
     }
 
-    // date & time - if missing we will set defaults later but warn user
-    // require at least date or time to be set (or provide defaults)
-    // (we'll auto-fill below if missing)
-
     // contact info when not anonymous
     if (!formData.anonymous) {
       if (!formData.name || formData.name.trim() === '') {
@@ -363,7 +311,9 @@ const ReportScreen: React.FC<ReportScreenProps> = ({ onBack }) => {
         reportData.lng = lng;
       }
 
-      const result = await submitReport(reportData);
+      // Get user ID if available
+      const userId = useUserProfile().user?.id;
+      const result = await submitReport(reportData, userId);
 
       // fetch full report from backend and add to local context
       try {
@@ -540,7 +490,7 @@ const ReportScreen: React.FC<ReportScreenProps> = ({ onBack }) => {
             style={styles.fieldInput}
             placeholder="Location of Incident*"
             value={formData.location}
-            onChangeText={handleAddressChange}
+            onChangeText={handleAdqdressChange}
             placeholderTextColor={Colors.textLight}
           />
           <Ionicons name="location-outline" size={20} color={Colors.primary} />

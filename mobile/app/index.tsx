@@ -11,57 +11,38 @@ import MyReportsScreen from '../components/profile/MyReportsScreen';
 import ConnectionCheckScreen from '../components/connection/ConnectionCheckScreen';
 import { Colors } from '../constants/colors';
 import { UserProfileProvider, useUserProfile } from '../components/profile/UserProfileContext';
+import { getAuthToken, login } from '../services/api';
 
 type Screen = 'connection' | 'welcome' | 'login' | 'signup' | 'home' | 'report' | 'profile' | 'myReports' | 'admin';
 type UserType = 'anonymous' | 'user' | 'admin' | null;
-
-// Mock function to simulate user data initialization after login
-const initializeUserData = (fullName: string, email: string, phone: string) => {
-  // In a real app, this would fetch user data from an API
-  return {
-    id: '1', // In a real app, this would come from the backend
-    fullName,
-    email,
-    phone,
-  };
-};
-
-// Mock function to simulate report data
-const initializeReportData = () => {
-  // In a real app, this would fetch reports from an API
-  return [
-    {
-      id: '1',
-      title: 'Street Light Outage',
-      description: 'The street light at the corner of Main St & 5th Ave is not working.',
-      location: 'Main St & 5th Ave',
-      date: 'Oct 10, 2025',
-      status: 'resolved' as const,
-    },
-    {
-      id: '2',
-      title: 'Pothole on Road',
-      description: 'Large pothole on Highway 101 causing traffic hazards.',
-      location: 'Highway 101',
-      date: 'Oct 5, 2025',
-      status: 'in-progress' as const,
-    },
-    {
-      id: '3',
-      title: 'Graffiti Vandalism',
-      description: 'Graffiti found on the community wall at Central Park.',
-      location: 'Central Park',
-      date: 'Sep 28, 2025',
-      status: 'pending' as const,
-    },
-  ];
-};
 
 // Separate component to handle user profile logic
 const AppContent = () => {
   const [currentScreen, setCurrentScreen] = useState<Screen>('connection');
   const [userType, setUserType] = useState<UserType>(null);
   const { setUser, addReport } = useUserProfile();
+
+  // Check if user is already logged in on app start
+  useEffect(() => {
+    checkAuthStatus();
+  }, []);
+
+  const checkAuthStatus = async () => {
+    try {
+      const token = await getAuthToken();
+      if (token) {
+        // Token exists, user is logged in
+        setCurrentScreen('home');
+        setUserType('user');
+      } else {
+        // No token, show connection screen
+        setCurrentScreen('connection');
+      }
+    } catch (error) {
+      console.error('Error checking auth status:', error);
+      setCurrentScreen('connection');
+    }
+  };
 
   const handleSignIn = () => {
     setCurrentScreen('login');
@@ -71,23 +52,23 @@ const AppContent = () => {
     setCurrentScreen('signup');
   };
 
-  const handleContinueAsGuest = () => {
-    setUserType('anonymous');
-    setCurrentScreen('home');
-  };
-
-  const handleLogin = () => {
-    // In a real app, after successful login, we would get user data from the backend
-    // For demo purposes, I'll use mock data that might have been stored from registration
-    setUserType('user');
-    setCurrentScreen('home');
-    // Set mock user data - in a real app this would come from an API response
-    setUser({
-      id: '1',
-      fullName: 'John Doe', // This would come from login response
-      email: 'john.doe@example.com', // This would come from login response
-      phone: '876-555-0123', // This would come from login response
-    });
+  const handleLogin = async (email: string, password: string) => {
+    try {
+      const loginData = await login({ email, password });
+      // Update user state with the returned user data
+      setUser({
+        id: loginData.user.id,
+        fullName: loginData.user.fullName,
+        email: loginData.user.email,
+        phone: loginData.user.phone,
+      });
+      setUserType('user');
+      setCurrentScreen('home');
+    } catch (error) {
+      console.error('Login error:', error);
+      // In a real app, you'd show an error message to the user
+      throw error;
+    }
   };
 
   const handleAdminLogin = () => {
@@ -95,22 +76,24 @@ const AppContent = () => {
     setCurrentScreen('admin');
   };
 
-  const handleRegister = (userData: { fullName: string; email: string; phone: string }) => {
-    // In a real app, after successful registration, we would get user data from the backend
-    // For demo purposes, we use the data from the sign up form
-    setUserType('user');
-    setCurrentScreen('home');
-    // Set user data from registration
-    setUser({
-      id: '1',
-      fullName: userData.fullName,
-      email: userData.email,
-      phone: userData.phone,
-    });
-    
-    // Initialize with some mock report data
-    const mockReports = initializeReportData();
-    mockReports.forEach(report => addReport(report));
+  const handleRegister = async (userData: { fullName: string; email: string; phone: string; password: string }) => {
+    try {
+      const { register } = await import('../services/api');
+      const registerData = await register(userData);
+      // Update user state with the returned user data
+      setUser({
+        id: registerData.user.id,
+        fullName: registerData.user.fullName,
+        email: registerData.user.email,
+        phone: registerData.user.phone,
+      });
+      setUserType('user');
+      setCurrentScreen('home');
+    } catch (error) {
+      console.error('Registration error:', error);
+      // In a real app, you'd show an error message to the user
+      throw error;
+    }
   };
 
   const handleBackToWelcome = () => {
@@ -126,9 +109,17 @@ const AppContent = () => {
     setCurrentScreen('report');
   };
 
-  const handleLogout = () => {
-    setUserType(null);
-    setCurrentScreen('welcome');
+  const handleLogout = async () => {
+    try {
+      // Import logout function to clear token
+      const { logout } = await import('../services/api');
+      await logout();
+      
+      setUserType(null);
+      setCurrentScreen('welcome');
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
   };
 
   const handleProfile = () => {
@@ -157,7 +148,6 @@ const AppContent = () => {
           <WelcomeScreen
             onSignIn={handleSignIn}
             onSignUp={handleSignUp}
-            onContinueAsGuest={handleContinueAsGuest}
           />
         );
       
@@ -206,7 +196,6 @@ const AppContent = () => {
           <WelcomeScreen
             onSignIn={handleSignIn}
             onSignUp={handleSignUp}
-            onContinueAsGuest={handleContinueAsGuest}
           />
         );
     }

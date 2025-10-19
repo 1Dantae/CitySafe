@@ -3,7 +3,7 @@ from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 
-from routes import reports, media, users, analytics
+from routes import reports, media, users, analytics, auth
 from db import db
 
 app = FastAPI(title="CitySafe Test Backend")
@@ -21,6 +21,7 @@ app.include_router(reports.router, prefix="/reports", tags=["reports"])
 app.include_router(media.router, prefix="/media", tags=["media"])
 app.include_router(users.router, prefix="/users", tags=["users"])
 app.include_router(analytics.router, prefix="/analytics", tags=["analytics"])
+app.include_router(auth.router, prefix="/auth", tags=["auth"])
 
 @app.get("/health")
 def health_check():

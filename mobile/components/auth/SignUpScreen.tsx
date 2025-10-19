@@ -13,7 +13,7 @@ import { useUserProfile } from '../../components/profile/UserProfileContext';
 
 interface SignUpScreenProps {
   onBack: () => void;
-  onSignUp: (userData: { fullName: string; email: string; phone: string }) => void;
+  onSignUp: (userData: { fullName: string; email: string; phone: string; password: string }) => void;
 }
 
 const SignUpScreen: React.FC<SignUpScreenProps> = ({ onBack, onSignUp }) => {
@@ -22,6 +22,29 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({ onBack, onSignUp }) => {
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
+
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleSignUpPress = async () => {
+    if (!fullName || !email || !phone || !password) {
+      alert('Please fill in all fields');
+      return;
+    }
+    
+    if (password.length < 6) {
+      alert('Password must be at least 6 characters');
+      return;
+    }
+    
+    setIsLoading(true);
+    try {
+      await onSignUp({ fullName, email, phone, password });
+    } catch (error) {
+      alert('Registration failed. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -46,6 +69,7 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({ onBack, onSignUp }) => {
                 placeholder="John Doe"
                 value={fullName}
                 onChangeText={setFullName}
+                editable={!isLoading}
               />
             </View>
           </View>
@@ -62,6 +86,7 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({ onBack, onSignUp }) => {
                 onChangeText={setEmail}
                 keyboardType="email-address"
                 autoCapitalize="none"
+                editable={!isLoading}
               />
             </View>
           </View>
@@ -77,6 +102,7 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({ onBack, onSignUp }) => {
                 value={phone}
                 onChangeText={setPhone}
                 keyboardType="phone-pad"
+                editable={!isLoading}
               />
             </View>
           </View>
@@ -88,10 +114,11 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({ onBack, onSignUp }) => {
               <Ionicons name="lock-closed-outline" size={20} color={Colors.primary} style={styles.inputIcon} />
               <TextInput
                 style={styles.input}
-                placeholder="Create password"
+                placeholder="Create password (min 6 chars)"
                 value={password}
                 onChangeText={setPassword}
                 secureTextEntry={!showPassword}
+                editable={!isLoading}
               />
               <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
                 <Ionicons
@@ -105,10 +132,21 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({ onBack, onSignUp }) => {
 
           {/* Create Account Button */}
           <TouchableOpacity 
-            style={styles.createButton} 
-            onPress={() => onSignUp({ fullName, email, phone })}
+            style={[styles.createButton, isLoading && styles.createButtonDisabled]} 
+            onPress={handleSignUpPress}
+            disabled={isLoading}
           >
-            <Text style={styles.createButtonText}>Create Account</Text>
+            {isLoading ? (
+              <>
+                <Ionicons name="hourglass" size={24} color={Colors.white} />
+                <Text style={styles.createButtonText}>Creating Account...</Text>
+              </>
+            ) : (
+              <>
+                <Ionicons name="person-add" size={24} color={Colors.white} />
+                <Text style={styles.createButtonText}>Create Account</Text>
+              </>
+            )}
           </TouchableOpacity>
         </View>
       </ScrollView>

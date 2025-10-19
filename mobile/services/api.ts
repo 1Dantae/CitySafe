@@ -1,4 +1,5 @@
 import { Platform } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Base URL for the backend API
 // For Android emulator, use 10.0.2.2 to reach host machine's localhost
@@ -9,6 +10,34 @@ const BASE_URL =
     : Platform.OS === 'android' 
       ? 'http://10.0.2.2:8000' 
       : 'http://localhost:8000';
+
+// Auth token management
+const AUTH_TOKEN_KEY = 'auth_token';
+
+export const getAuthToken = async (): Promise<string | null> => {
+  try {
+    return await AsyncStorage.getItem(AUTH_TOKEN_KEY);
+  } catch (error) {
+    console.error('Error getting auth token:', error);
+    return null;
+  }
+};
+
+export const setAuthToken = async (token: string): Promise<void> => {
+  try {
+    await AsyncStorage.setItem(AUTH_TOKEN_KEY, token);
+  } catch (error) {
+    console.error('Error setting auth token:', error);
+  }
+};
+
+export const clearAuthToken = async (): Promise<void> => {
+  try {
+    await AsyncStorage.removeItem(AUTH_TOKEN_KEY);
+  } catch (error) {
+    console.error('Error clearing auth token:', error);
+  }
+};
 
 // Interface for report data
 export interface ReportData {
@@ -34,9 +63,10 @@ export interface ReportResponse {
 /**
  * Submit a new report to the backend
  * @param reportData - The report data to submit
+ * @param userId - Optional user ID to associate with the report
  * @returns Promise with the report ID on success
  */
-export const submitReport = async (reportData: ReportData): Promise<ReportResponse> => {
+export const submitReport = async (reportData: ReportData, userId?: string): Promise<ReportResponse> => {
   try {
     const formData = new FormData();
     
@@ -52,6 +82,7 @@ export const submitReport = async (reportData: ReportData): Promise<ReportRespon
     if (reportData.email) formData.append('email', reportData.email);
     if (reportData.lat) formData.append('lat', reportData.lat.toString());
     if (reportData.lng) formData.append('lng', reportData.lng.toString());
+    if (userId) formData.append('user_id', userId);
     
     // Add media file if provided
     if (reportData.media) {
@@ -59,12 +90,20 @@ export const submitReport = async (reportData: ReportData): Promise<ReportRespon
       formData.append('media', { uri, name, type } as any);
     }
 
+    // Get auth token if available
+    const authToken = await getAuthToken();
+    const headers: { [key: string]: string } = {
+      'Content-Type': 'multipart/form-data',
+    };
+    
+    if (authToken) {
+      headers['Authorization'] = `Bearer ${authToken}`;
+    }
+
     const response = await fetch(`${BASE_URL}/reports`, {
       method: 'POST',
       body: formData,
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
+      headers,
     });
 
     if (!response.ok) {
@@ -90,7 +129,17 @@ export const getReports = async (skip: number = 0, limit: number = 100, userId?:
   try {
     let url = `${BASE_URL}/reports?skip=${skip}&limit=${limit}`;
     if (userId) url += `&user_id=${encodeURIComponent(userId)}`;
-    const response = await fetch(url);
+    
+    const authToken = await getAuthToken();
+    const headers: { [key: string]: string } = {};
+    
+    if (authToken) {
+      headers['Authorization'] = `Bearer ${authToken}`;
+    }
+    
+    const response = await fetch(url, {
+      headers,
+    });
 
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
@@ -111,7 +160,16 @@ export const getReports = async (skip: number = 0, limit: number = 100, userId?:
  */
 export const getReportById = async (reportId: string) => {
   try {
-    const response = await fetch(`${BASE_URL}/reports/${reportId}`);
+    const authToken = await getAuthToken();
+    const headers: { [key: string]: string } = {};
+    
+    if (authToken) {
+      headers['Authorization'] = `Bearer ${authToken}`;
+    }
+    
+    const response = await fetch(`${BASE_URL}/reports/${reportId}`, {
+      headers,
+    });
 
     if (!response.ok) {
       if (response.status === 404) {
@@ -141,6 +199,93 @@ export const checkConnection = async () => {
     return result;
   } catch (error) {
     console.error('Health check failed:', error);
+    throw error;
+  }
+};
+
+// Auth API functions
+interface LoginCredentials {
+  email: string;
+  password: string;
+}
+
+interface RegisterData {
+  fullName: string;
+  email: string;
+  phone: string;
+  password: string;
+}
+
+interface AuthResponse {
+  token: string;
+  user: {
+    id: string;
+    email: string;
+    fullName: string;
+    phone?: string;
+  };
+}
+
+export const login = async (credentials: LoginCredentials): Promise<AuthResponse> => {
+  try {
+    const response = await fetch(`${BASE_URL}/auth/login`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(credentials),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
+    }
+
+    const result: AuthResponse = await response.json();
+    
+    // Store the token for future requests
+    await setAuthToken(result.token);
+    
+    return result;
+  } catch (error) {
+    console.error('Error during login:', error);
+    throw error;
+  }
+};
+
+export const register = async (userData: RegisterData): Promise<AuthResponse> => {
+  try {
+    const response = await fetch(`${BASE_URL}/auth/register`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(userData),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
+    }
+
+    const result: AuthResponse = await response.json();
+    
+    // Store the token for future requests
+    await setAuthToken(result.token);
+    
+    return result;
+  } catch (error) {
+    console.error('Error during registration:', error);
+    throw error;
+  }
+};
+
+export const logout = async (): Promise<void> => {
+  try {
+    // Clear the stored token
+    await clearAuthToken();
+  } catch (error) {
+    console.error('Error during logout:', error);
     throw error;
   }
 };
