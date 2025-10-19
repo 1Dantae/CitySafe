@@ -7,10 +7,12 @@ import {
   useCameraPermissions,
   useMediaLibraryPermissions,
 } from 'expo-image-picker';
+import { format } from 'date-fns';
 import React, { useState } from 'react';
 import {
   Alert,
   Image,
+  Platform,
   ScrollView,
   StyleSheet,
   Switch,
@@ -18,21 +20,11 @@ import {
   TextInput,
   TouchableOpacity,
   View,
-  Dimensions,
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Video, ResizeMode } from 'expo-av';
 import { Colors } from '../../constants/colors';
 import { useUserProfile } from '../profile/UserProfileContext';
-import { NotificationService } from '../../services/NotificationService';
-
-// Scaling function based on screen dimensions
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
-const scale = SCREEN_WIDTH / 375; // 375 is the base width for iPhone
-const verticalScale = SCREEN_HEIGHT / 812; // 812 is the base height for iPhone X
-
-const scaleSize = (size: number) => Math.ceil(size * scale);
-const scaleVertical = (size: number) => Math.ceil(size * verticalScale);
 
 interface ReportScreenProps {
   onBack: () => void;
@@ -68,6 +60,7 @@ const ReportScreen: React.FC<ReportScreenProps> = ({ onBack }) => {
 
   const [showTypePicker, setShowTypePicker] = useState(false);
   const [pickedImage, setPickedImage] = useState<string | null>(null);
+  const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [addressSuggestions, setAddressSuggestions] = useState<string[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -197,6 +190,14 @@ const ReportScreen: React.FC<ReportScreenProps> = ({ onBack }) => {
     setShowSuggestions(false);
   };
 
+  const handleDateChange = (event: any, selectedDate?: Date) => {
+    setShowDatePicker(false);
+    if (selectedDate) {
+      const formattedDate = format(selectedDate, 'MMM dd, yyyy'); // e.g., "Oct 18, 2025"
+      setFormData({ ...formData, date: formattedDate });
+    }
+  };
+
   const parseTimeToDateTime = (timeString: string): Date => {
     if (!timeString) return new Date();
     
@@ -248,7 +249,7 @@ const ReportScreen: React.FC<ReportScreenProps> = ({ onBack }) => {
     }
 
     // Create a report object to add to the user's profile
-    const reportDate = formData.date ? new Date(formData.date) : new Date();
+    const reportDate = formData.date ? new Date(formData.date.split('/').reverse().join('/')) : new Date();
     const formattedDate = reportDate.toLocaleDateString('en-US', { 
       year: 'numeric', 
       month: 'short', 
@@ -260,35 +261,16 @@ const ReportScreen: React.FC<ReportScreenProps> = ({ onBack }) => {
       : formData.incidentType;
     
     const newReport = {
-      id: Date.now().toString(), // In a real app, this was from the backend
+      id: Date.now().toString(), // In a real app, this would be from the backend
       title: reportTitle,
       description: formData.description,
       location: formData.location,
       date: formattedDate,
-      time: formData.time,
-      incidentType: formData.incidentType,
-      witnesses: formData.witnesses,
-      anonymous: formData.anonymous,
-      name: formData.anonymous ? undefined : formData.name,
-      phone: formData.anonymous ? undefined : formData.phone,
-      email: formData.anonymous ? undefined : formData.email,
-      mediaUri: pickedImage,
       status: 'pending' as const,
     };
 
     // Add the report to the user's profile
     addReport(newReport);
-
-    // Generate a notification for the new incident report
-    NotificationService.generateIncidentReportNotification(newReport.title, newReport.location)
-      .then(notification => {
-        if (notification) {
-          console.log('Notification created for incident report:', notification.title);
-        }
-      })
-      .catch(error => {
-        console.error('Error creating notification for incident report:', error);
-      });
 
     Alert.alert('Success', 'Report submitted successfully!', [
       { text: 'OK', onPress: onBack },
@@ -368,19 +350,36 @@ const ReportScreen: React.FC<ReportScreenProps> = ({ onBack }) => {
         )}
 
         {/* Date */}
-        <View style={styles.fieldCard}>
+        <TouchableOpacity
+          style={styles.fieldCard}
+          onPress={() => setShowDatePicker(true)}
+        >
           <View style={styles.iconContainer}>
             <Ionicons name="calendar" size={24} color={Colors.white} />
           </View>
-          <TextInput
-            style={styles.fieldInput}
-            placeholder="Date of Incident (e.g., Oct 18, 2025)*"
-            value={formData.date}
-            onChangeText={(text) => setFormData({ ...formData, date: text })}
-            placeholderTextColor={Colors.textLight}
-          />
+          <Text style={styles.fieldText}>
+            {formData.date || 'Date of Incident*'}
+          </Text>
           <Ionicons name="calendar-outline" size={20} color={Colors.primary} />
-        </View>
+        </TouchableOpacity>
+
+        {/* Date Picker Modal */}
+        {showDatePicker && (
+          <View style={styles.pickerModal}>
+            <View style={styles.pickerHeader}>
+              <Text style={styles.pickerHeaderTitle}>Select Date</Text>
+              <TouchableOpacity onPress={() => setShowDatePicker(false)}>
+                <Ionicons name="close" size={24} color={Colors.primary} />
+              </TouchableOpacity>
+            </View>
+            <DateTimePicker
+              value={formData.date ? new Date(Date.parse(formData.date)) : new Date()}
+              mode="date"
+              display="default"
+              onChange={handleDateChange}
+            />
+          </View>
+        )}
 
         {/* Time */}
         <TouchableOpacity
@@ -586,17 +585,17 @@ const styles = StyleSheet.create({
   },
   header: {
     backgroundColor: Colors.primary,
-    paddingTop: scaleVertical(60),
-    paddingBottom: scaleVertical(24),
-    paddingHorizontal: scaleSize(24),
+    paddingTop: 60,
+    paddingBottom: 24,
+    paddingHorizontal: 24,
     flexDirection: 'row',
     alignItems: 'center',
   },
   backButton: {
-    marginRight: scaleSize(16),
+    marginRight: 16,
   },
   headerTitle: {
-    fontSize: scaleSize(28),
+    fontSize: 28,
     fontWeight: 'bold',
     color: Colors.white,
   },
@@ -604,70 +603,70 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   contentContainer: {
-    paddingHorizontal: scaleSize(24),
-    paddingVertical: scaleVertical(24),
-    paddingBottom: scaleVertical(40),
+    paddingHorizontal: 24,
+    paddingVertical: 24,
+    paddingBottom: 40,
   },
   fieldCard: {
     backgroundColor: Colors.white,
-    borderRadius: scaleSize(16),
-    padding: scaleSize(16),
+    borderRadius: 16,
+    padding: 16,
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: scaleVertical(16),
+    marginBottom: 16,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: scaleVertical(2) },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
-    shadowRadius: scaleSize(4),
+    shadowRadius: 4,
     elevation: 2,
   },
   descriptionCard: {
     alignItems: 'flex-start',
   },
   iconContainer: {
-    width: scaleSize(48),
-    height: scaleSize(48),
-    borderRadius: scaleSize(12),
+    width: 48,
+    height: 48,
+    borderRadius: 12,
     backgroundColor: Colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: scaleSize(16),
+    marginRight: 16,
   },
   fieldText: {
     flex: 1,
-    fontSize: scaleSize(16),
+    fontSize: 16,
     color: Colors.primary,
     fontWeight: '500',
   },
   fieldInput: {
     flex: 1,
-    fontSize: scaleSize(16),
+    fontSize: 16,
     color: Colors.primary,
     fontWeight: '500',
   },
   descriptionInput: {
-    minHeight: scaleVertical(100),
-    paddingTop: scaleVertical(12),
+    minHeight: 100,
+    paddingTop: 12,
   },
   pickerContainer: {
     backgroundColor: Colors.white,
-    borderRadius: scaleSize(16),
-    marginBottom: scaleVertical(16),
+    borderRadius: 16,
+    marginBottom: 16,
     overflow: 'hidden',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: scaleVertical(2) },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
-    shadowRadius: scaleSize(4),
+    shadowRadius: 4,
     elevation: 2,
   },
   pickerItem: {
-    paddingVertical: scaleVertical(16),
-    paddingHorizontal: scaleSize(24),
+    paddingVertical: 16,
+    paddingHorizontal: 24,
     borderBottomWidth: 1,
     borderBottomColor: Colors.background,
   },
   pickerItemText: {
-    fontSize: scaleSize(16),
+    fontSize: 16,
     color: Colors.primary,
   },
   submitButton: {
@@ -675,55 +674,55 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: scaleVertical(20),
-    borderRadius: scaleSize(30),
-    marginTop: scaleVertical(8),
+    paddingVertical: 20,
+    borderRadius: 30,
+    marginTop: 8,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: scaleVertical(4) },
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
-    shadowRadius: scaleSize(8),
+    shadowRadius: 8,
     elevation: 8,
   },
   submitButtonText: {
     color: Colors.white,
-    fontSize: scaleSize(18),
+    fontSize: 18,
     fontWeight: 'bold',
-    marginLeft: scaleSize(12),
+    marginLeft: 12,
   },
   suggestionsContainer: {
     backgroundColor: Colors.white,
-    borderRadius: scaleSize(8),
-    maxHeight: scaleVertical(150),
-    marginBottom: scaleVertical(16),
+    borderRadius: 8,
+    maxHeight: 150,
+    marginBottom: 16,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: scaleVertical(2) },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
-    shadowRadius: scaleSize(4),
+    shadowRadius: 4,
     elevation: 2,
     zIndex: 10,
   },
   suggestionItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: scaleSize(12),
+    padding: 12,
     borderBottomWidth: 1,
     borderBottomColor: Colors.background,
   },
   suggestionIcon: {
-    marginRight: scaleSize(12),
+    marginRight: 12,
   },
   suggestionText: {
-    fontSize: scaleSize(16),
+    fontSize: 16,
     color: Colors.primary,
   },
   pickerModal: {
     backgroundColor: Colors.white,
-    borderRadius: scaleSize(16),
-    marginBottom: scaleVertical(16),
+    borderRadius: 16,
+    marginBottom: 16,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: scaleVertical(2) },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
-    shadowRadius: scaleSize(4),
+    shadowRadius: 4,
     elevation: 2,
     overflow: 'hidden',
   },
@@ -731,11 +730,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: scaleSize(16),
+    padding: 16,
     backgroundColor: Colors.primary,
   },
   pickerHeaderTitle: {
-    fontSize: scaleSize(18),
+    fontSize: 18,
     fontWeight: 'bold',
     color: Colors.white,
   },
@@ -746,35 +745,35 @@ const styles = StyleSheet.create({
   photoButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: scaleVertical(8),
-    paddingHorizontal: scaleSize(12),
-    marginVertical: scaleVertical(4),
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    marginVertical: 4,
     backgroundColor: Colors.accent,
-    borderRadius: scaleSize(20),
-    marginRight: scaleSize(8),
+    borderRadius: 20,
+    marginRight: 8,
   },
   photoButtonText: {
     color: Colors.primary,
-    fontSize: scaleSize(14),
+    fontSize: 14,
     fontWeight: '500',
-    marginLeft: scaleSize(8),
+    marginLeft: 8,
   },
   imagePreviewContainer: {
     position: 'relative',
-    marginBottom: scaleVertical(16),
+    marginBottom: 16,
   },
   imagePreview: {
     width: '100%',
-    height: scaleVertical(200),
-    borderRadius: scaleSize(12),
+    height: 200,
+    borderRadius: 12,
   },
   removeImageButton: {
     position: 'absolute',
-    top: scaleSize(8),
-    right: scaleSize(8),
+    top: 8,
+    right: 8,
     backgroundColor: Colors.white,
-    borderRadius: scaleSize(12),
-    padding: scaleSize(4),
+    borderRadius: 12,
+    padding: 4,
   },
 });
 
