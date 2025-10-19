@@ -954,6 +954,345 @@ document.addEventListener('keydown', function(event) {
 });
 
 console.log('Create Alert Modal functions loaded');
+// ===================================
+// ALERT ACTION MODALS FUNCTIONALITY
+// ===================================
+
+// Mock alert data (in production, this would come from your database)
+const mockAlertData = {
+    'alert-5678': {
+        id: 'ALT-5678',
+        userId: '#5678',
+        title: 'Emergency Call - User #5678',
+        type: 'Assault in Progress',
+        location: 'Kingston Central',
+        parish: 'Kingston',
+        fullAddress: '123 Main Street, Kingston Central',
+        description: 'User reported an assault in progress. Multiple individuals involved.',
+        status: 'Dispatched to JDF',
+        priority: 'Critical',
+        timestamp: '2 minutes ago',
+        reportedBy: 'Anonymous User',
+        phone: '+1 876-555-0123',
+        agencies: ['JDF'],
+        officers: '2 units dispatched'
+    },
+    'chat-9012': {
+        id: 'CHT-9012',
+        userId: '#5678',
+        chatId: '#9012',
+        title: 'AI Escalation - Chat #9012',
+        reason: 'Threatening Language Detected',
+        aiConfidence: 'High (95%)',
+        status: 'Awaiting Review',
+        priority: 'High',
+        timestamp: '10 minutes ago',
+        duration: '5 minutes',
+        keywords: ['weapon', 'hurt', 'tonight'],
+        sentiment: 'Hostile',
+        transcript: [
+            { sender: 'User #5678', type: 'user', time: '14:25', text: 'I need to report something serious', flagged: false },
+            { sender: 'AI Assistant', type: 'ai', time: '14:25', text: 'I\'m here to help. What would you like to report?', flagged: false },
+            { sender: 'User #5678', type: 'user', time: '14:26', text: 'Someone is threatening me with a weapon', flagged: true },
+            { sender: 'AI Assistant', type: 'ai', time: '14:26', text: 'This sounds very serious. Can you provide more details about your location?', flagged: false },
+            { sender: 'User #5678', type: 'user', time: '14:27', text: 'They said they would hurt me tonight', flagged: true },
+            { sender: 'AI Assistant', type: 'ai', time: '14:27', text: '⚠️ ESCALATING TO AUTHORITIES. Please stay in a safe location.', flagged: false }
+        ]
+    }
+};
+
+// ===================================
+// VIEW DETAILS MODAL
+// ===================================
+
+function viewAlertDetails(alertId) {
+    console.log('Viewing details for:', alertId);
+    const modal = document.getElementById('viewDetailsModal');
+    const content = document.getElementById('alertDetailsContent');
+    
+    // Get alert data (in production, fetch from server)
+    const alert = mockAlertData[alertId] || mockAlertData['alert-5678'];
+    
+    content.innerHTML = `
+        <h3 class="detail-section-title">📋 Alert Information</h3>
+        <div class="detail-row">
+            <div class="detail-label">Alert ID:</div>
+            <div class="detail-value">${alert.id}</div>
+        </div>
+        <div class="detail-row">
+            <div class="detail-label">Title:</div>
+            <div class="detail-value">${alert.title}</div>
+        </div>
+        <div class="detail-row">
+            <div class="detail-label">Type:</div>
+            <div class="detail-value"><span class="tag red">${alert.type}</span></div>
+        </div>
+        <div class="detail-row">
+            <div class="detail-label">Priority:</div>
+            <div class="detail-value"><span class="tag red">${alert.priority}</span></div>
+        </div>
+        <div class="detail-row">
+            <div class="detail-label">Status:</div>
+            <div class="detail-value"><span class="tag green">${alert.status}</span></div>
+        </div>
+        <div class="detail-row">
+            <div class="detail-label">Time:</div>
+            <div class="detail-value">${alert.timestamp}</div>
+        </div>
+
+        <h3 class="detail-section-title">📍 Location Details</h3>
+        <div class="detail-row">
+            <div class="detail-label">Location:</div>
+            <div class="detail-value">${alert.fullAddress || alert.location}</div>
+        </div>
+        <div class="detail-row">
+            <div class="detail-label">Parish:</div>
+            <div class="detail-value">${alert.parish}</div>
+        </div>
+
+        <h3 class="detail-section-title">ℹ️ Incident Description</h3>
+        <div style="padding: 1rem; background: var(--background); border-radius: 8px;">
+            <p>${alert.description}</p>
+        </div>
+
+        <h3 class="detail-section-title">👤 Reporter Information</h3>
+        <div class="detail-row">
+            <div class="detail-label">User ID:</div>
+            <div class="detail-value">${alert.userId}</div>
+        </div>
+        <div class="detail-row">
+            <div class="detail-label">Reported By:</div>
+            <div class="detail-value">${alert.reportedBy}</div>
+        </div>
+        ${alert.phone ? `
+        <div class="detail-row">
+            <div class="detail-label">Contact:</div>
+            <div class="detail-value">${alert.phone}</div>
+        </div>
+        ` : ''}
+
+        <h3 class="detail-section-title">🚔 Response Status</h3>
+        <div class="detail-row">
+            <div class="detail-label">Agencies Notified:</div>
+            <div class="detail-value">${alert.agencies.join(', ')}</div>
+        </div>
+        ${alert.officers ? `
+        <div class="detail-row">
+            <div class="detail-label">Units Dispatched:</div>
+            <div class="detail-value">${alert.officers}</div>
+        </div>
+        ` : ''}
+    `;
+    
+    modal.classList.add('active');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeViewDetailsModal() {
+    const modal = document.getElementById('viewDetailsModal');
+    modal.classList.remove('active');
+    document.body.style.overflow = 'auto';
+}
+
+// ===================================
+// CONTACT USER MODAL
+// ===================================
+
+function contactUser(alertId) {
+    console.log('Contacting user for:', alertId);
+    const modal = document.getElementById('contactUserModal');
+    const content = document.getElementById('userContactDetails');
+    
+    const alert = mockAlertData[alertId] || mockAlertData['alert-5678'];
+    
+    content.innerHTML = `
+        <p><strong>User ID:</strong> ${alert.userId}</p>
+        <p><strong>Phone:</strong> ${alert.phone || 'Not available'}</p>
+        <p><strong>Location:</strong> ${alert.location}</p>
+        <p><strong>Status:</strong> <span class="tag green">Online</span></p>
+    `;
+    
+    modal.classList.add('active');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeContactUserModal() {
+    const modal = document.getElementById('contactUserModal');
+    modal.classList.remove('active');
+    document.body.style.overflow = 'auto';
+}
+
+function initiateCall() {
+    alert('📞 Initiating voice call to user...\n\nConnecting to: +1 876-555-0123');
+    console.log('Initiating call');
+}
+
+function sendSMS() {
+    alert('💬 SMS message sent successfully!\n\nUser will receive your message shortly.');
+    console.log('Sending SMS');
+}
+
+function openChat() {
+    alert('💭 Opening live chat with user...\n\nRedirecting to chat interface.');
+    console.log('Opening chat');
+    // In production: window.location.href = 'chat.html?userId=5678';
+}
+
+function sendQuickMessage() {
+    const message = document.getElementById('contactMessage').value;
+    if (!message.trim()) {
+        alert('Please enter a message.');
+        return;
+    }
+    alert(`✓ Message sent successfully!\n\n"${message}"`);
+    closeContactUserModal();
+}
+
+// ===================================
+// REVIEW CHAT MODAL
+// ===================================
+
+function reviewChat(chatId) {
+    console.log('Reviewing chat:', chatId);
+    const modal = document.getElementById('reviewChatModal');
+    const content = document.getElementById('chatTranscriptContent');
+    
+    const chat = mockAlertData[chatId] || mockAlertData['chat-9012'];
+    
+    // Update chat info
+    document.getElementById('reviewChatId').textContent = chat.chatId || chatId;
+    document.getElementById('reviewUserId').textContent = chat.userId;
+    document.getElementById('chatDuration').textContent = chat.duration;
+    
+    // Build transcript
+    let transcriptHTML = '';
+    chat.transcript.forEach(msg => {
+        const messageClass = msg.flagged ? 'transcript-message flagged' : `transcript-message ${msg.type}`;
+        transcriptHTML += `
+            <div class="${messageClass}">
+                <div class="message-header">
+                    <span class="message-sender">${msg.sender}</span>
+                    <span class="message-time">${msg.time}</span>
+                </div>
+                <div class="message-text">${msg.text}</div>
+                ${msg.flagged ? '<span class="message-flag">⚠️ FLAGGED BY AI</span>' : ''}
+            </div>
+        `;
+    });
+    
+    content.innerHTML = transcriptHTML;
+    
+    modal.classList.add('active');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeReviewChatModal() {
+    const modal = document.getElementById('reviewChatModal');
+    modal.classList.remove('active');
+    document.body.style.overflow = 'auto';
+}
+
+function markAsFalsePositive() {
+    const notes = document.getElementById('reviewNotes').value;
+    const confirmed = confirm('Mark this alert as a false positive?\n\nThis will dismiss the alert and update the AI training data.');
+    
+    if (confirmed) {
+        console.log('Marked as false positive. Notes:', notes);
+        alert('✓ Alert marked as false positive.\n\nAI system will be updated to improve future detection.');
+        closeReviewChatModal();
+    }
+}
+
+function escalateFromReview() {
+    closeReviewChatModal();
+    setTimeout(() => {
+        openEscalateModal('chat-9012');
+    }, 300);
+}
+
+// ===================================
+// ESCALATE MODAL
+// ===================================
+
+function openEscalateModal(alertId) {
+    console.log('Opening escalation for:', alertId);
+    const modal = document.getElementById('escalateModal');
+    const content = document.getElementById('escalationAlertInfo');
+    
+    const alert = mockAlertData[alertId] || mockAlertData['chat-9012'];
+    
+    content.innerHTML = `
+        <p><strong>Alert ID:</strong> ${alert.id || alert.chatId}</p>
+        <p><strong>Type:</strong> <span class="tag red">${alert.type || alert.reason}</span></p>
+        <p><strong>Location:</strong> ${alert.location || 'Kingston Central'}</p>
+        <p><strong>Current Status:</strong> ${alert.status}</p>
+        <p><strong>Time:</strong> ${alert.timestamp}</p>
+    `;
+    
+    modal.classList.add('active');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeEscalateModal() {
+    const modal = document.getElementById('escalateModal');
+    modal.classList.remove('active');
+    document.body.style.overflow = 'auto';
+}
+
+function confirmEscalation() {
+    const agencies = Array.from(document.querySelectorAll('input[name="escalateAgencies"]:checked')).map(cb => cb.value);
+    const priority = document.getElementById('escalationPriority').value;
+    const reason = document.getElementById('escalationReason').value;
+    const dispatchUnits = document.getElementById('dispatchUnits').checked;
+    const notifyCommander = document.getElementById('notifyCommander').checked;
+    
+    if (agencies.length === 0) {
+        alert('Please select at least one agency to notify.');
+        return;
+    }
+    
+    if (!reason.trim()) {
+        alert('Please provide a reason for escalation.');
+        return;
+    }
+    
+    const agenciesList = agencies.map(a => `- ${a}`).join('\n');
+    const confirmed = confirm(`🚨 CONFIRM ESCALATION\n\nPriority: ${priority.toUpperCase()}\n\nNotifying:\n${agenciesList}\n\n${dispatchUnits ? '✓ Units will be dispatched\n' : ''}${notifyCommander ? '✓ Duty Commander will be notified\n' : ''}\nProceed with escalation?`);
+    
+    if (confirmed) {
+        console.log('Escalation confirmed', { agencies, priority, reason, dispatchUnits, notifyCommander });
+        alert(`🚨 ESCALATION SUCCESSFUL\n\nAgencies notified: ${agencies.join(', ')}\nPriority: ${priority}\n\nResponse units are being deployed.`);
+        closeEscalateModal();
+    }
+}
+
+// Update window.onclick to handle all modals
+window.onclick = function(event) {
+    const modals = ['addUserModal', 'createAlertModal', 'viewDetailsModal', 'contactUserModal', 'reviewChatModal', 'escalateModal'];
+    modals.forEach(modalId => {
+        const modal = document.getElementById(modalId);
+        if (event.target === modal) {
+            modal.classList.remove('active');
+            document.body.style.overflow = 'auto';
+        }
+    });
+}
+
+// Update keydown listener for all modals
+document.addEventListener('keydown', function(event) {
+    if (event.key === 'Escape') {
+        const modals = ['addUserModal', 'createAlertModal', 'viewDetailsModal', 'contactUserModal', 'reviewChatModal', 'escalateModal'];
+        modals.forEach(modalId => {
+            const modal = document.getElementById(modalId);
+            if (modal && modal.classList.contains('active')) {
+                modal.classList.remove('active');
+                document.body.style.overflow = 'auto';
+            }
+        });
+    }
+});
+
+console.log('Alert action modals loaded successfully');
 
 
 

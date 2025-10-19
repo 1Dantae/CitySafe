@@ -393,8 +393,8 @@
                         <p><strong>Type:</strong> Assault in Progress</p>
                         <p><strong>Status:</strong> Dispatched to JDF</p>
                         <div class="alert-actions">
-                            <button class="btn btn-danger">View Details</button>
-                            <button class="btn btn-secondary">Contact User</button>
+                            <button class="btn btn-danger" onclick="viewAlertDetails('alert-5678')">View Details</button>
+                            <button class="btn btn-secondary" onclick="contactUser('alert-5678')">Contact User</button>
                         </div>
                     </div>
 
@@ -407,8 +407,8 @@
                         <p><strong>AI Confidence:</strong> High (95%)</p>
                         <p><strong>Status:</strong> Awaiting Review</p>
                         <div class="alert-actions">
-                            <button class="btn btn-primary">Review Chat</button>
-                            <button class="btn btn-danger">Escalate</button>
+                            <button class="btn btn-primary" onclick="reviewChat('chat-9012')">Review Chat</button>
+                            <button class="btn btn-danger" onclick="openEscalateModal('chat-9012')">Escalate</button>
                         </div>
                     </div>
                 </div>
@@ -716,6 +716,214 @@
                 <button class="btn btn-secondary" onclick="closeCreateAlertModal()">Cancel</button>
                 <button class="btn btn-danger" onclick="document.getElementById('createAlertForm').requestSubmit()">
                     🚨 Broadcast Alert
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- View Alert Details Modal -->
+    <div id="viewDetailsModal" class="modal">
+        <div class="modal-content" style="max-width: 800px;">
+            <div class="modal-header">
+                <h3>🚨 Alert Details</h3>
+                <button class="close-btn" onclick="closeViewDetailsModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="alertDetailsContent">
+                    <!-- Content will be dynamically inserted here -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeViewDetailsModal()">Close</button>
+                <button class="btn btn-danger">Update Status</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Contact User Modal -->
+    <div id="contactUserModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>📞 Contact User</h3>
+                <button class="close-btn" onclick="closeContactUserModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="info-text">
+                    Choose how you'd like to contact this user regarding their emergency alert.
+                </div>
+
+                <div class="contact-method-grid">
+                    <div class="contact-method-card" onclick="initiateCall()">
+                        <div class="contact-icon">📞</div>
+                        <h4>Voice Call</h4>
+                        <p>Call user directly</p>
+                        <button class="btn btn-full btn-primary">Initiate Call</button>
+                    </div>
+
+                    <div class="contact-method-card" onclick="sendSMS()">
+                        <div class="contact-icon">💬</div>
+                        <h4>SMS Message</h4>
+                        <p>Send text message</p>
+                        <button class="btn btn-full btn-primary">Send SMS</button>
+                    </div>
+
+                    <div class="contact-method-card" onclick="openChat()">
+                        <div class="contact-icon">💭</div>
+                        <h4>Live Chat</h4>
+                        <p>Start chat session</p>
+                        <button class="btn btn-full btn-primary">Open Chat</button>
+                    </div>
+                </div>
+
+                <div class="user-contact-info">
+                    <h4>User Information</h4>
+                    <div id="userContactDetails">
+                        <!-- Content will be dynamically inserted -->
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="contactMessage">Quick Message (Optional)</label>
+                    <textarea id="contactMessage" placeholder="Type a message to send to the user..." rows="3"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeContactUserModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="sendQuickMessage()">Send Message</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Review Chat Modal -->
+    <div id="reviewChatModal" class="modal">
+        <div class="modal-content" style="max-width: 900px;">
+            <div class="modal-header">
+                <h3>💬 Chat Transcript Review</h3>
+                <button class="close-btn" onclick="closeReviewChatModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="chat-review-header">
+                    <div class="chat-review-info">
+                        <p><strong>Chat ID:</strong> <span id="reviewChatId">#9012</span></p>
+                        <p><strong>User:</strong> <span id="reviewUserId">#5678</span></p>
+                        <p><strong>Duration:</strong> <span id="chatDuration">5 minutes</span></p>
+                        <p><strong>AI Confidence:</strong> <span class="tag red">High (95%)</span></p>
+                    </div>
+                    <div class="ai-analysis-box">
+                        <h4>🤖 AI Analysis</h4>
+                        <p><strong>Detected:</strong> Threatening Language</p>
+                        <p><strong>Keywords:</strong> weapon, hurt, tonight</p>
+                        <p><strong>Sentiment:</strong> Hostile</p>
+                        <p><strong>Urgency:</strong> Critical</p>
+                    </div>
+                </div>
+
+                <div class="chat-transcript">
+                    <h4>Full Conversation Transcript</h4>
+                    <div id="chatTranscriptContent" class="transcript-messages">
+                        <!-- Content will be dynamically inserted -->
+                    </div>
+                </div>
+
+                <div class="review-actions-section">
+                    <h4>Review Actions</h4>
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" id="threatConfirmed">
+                            Confirm threat is genuine
+                        </label>
+                    </div>
+                    <div class="form-group">
+                        <label for="reviewNotes">Admin Notes</label>
+                        <textarea id="reviewNotes" placeholder="Add your review notes..." rows="3"></textarea>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeReviewChatModal()">Close</button>
+                <button class="btn btn-warning" onclick="markAsFalsePositive()">Mark as False Positive</button>
+                <button class="btn btn-danger" onclick="escalateFromReview()">Escalate to Authorities</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Escalate Alert Modal -->
+    <div id="escalateModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>⚠️ Escalate Alert</h3>
+                <button class="close-btn" onclick="closeEscalateModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="alert-banner urgent">
+                    <div class="alert-icon">🚨</div>
+                    <div>
+                        <strong>CRITICAL ACTION REQUIRED</strong><br>
+                        <span style="font-size: 0.9rem;">This will immediately notify law enforcement agencies</span>
+                    </div>
+                </div>
+
+                <div class="escalation-info">
+                    <h4>Alert Information</h4>
+                    <div id="escalationAlertInfo">
+                        <!-- Content will be dynamically inserted -->
+                    </div>
+                </div>
+
+                <div class="notify-agencies">
+                    <label>Select Agencies to Notify *</label>
+                    <div class="agency-checkboxes">
+                        <label class="agency-checkbox">
+                            <input type="checkbox" name="escalateAgencies" value="JCF" checked>
+                            <span class="agency-name">Jamaica Constabulary Force (JCF)</span>
+                        </label>
+                        <label class="agency-checkbox">
+                            <input type="checkbox" name="escalateAgencies" value="JDF">
+                            <span class="agency-name">Jamaica Defence Force (JDF)</span>
+                        </label>
+                        <label class="agency-checkbox">
+                            <input type="checkbox" name="escalateAgencies" value="JCDF">
+                            <span class="agency-name">Jamaica Combined Defence Force (JCDF)</span>
+                        </label>
+                        <label class="agency-checkbox">
+                            <input type="checkbox" name="escalateAgencies" value="NSA" checked>
+                            <span class="agency-name">National Security Agency</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="escalationPriority">Escalation Priority *</label>
+                    <select id="escalationPriority" required>
+                        <option value="critical" selected>Critical - Immediate Response</option>
+                        <option value="high">High Priority</option>
+                        <option value="standard">Standard</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="escalationReason">Reason for Escalation *</label>
+                    <textarea id="escalationReason" required placeholder="Describe why this alert requires escalation..." rows="4"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="dispatchUnits">
+                        Request immediate dispatch of units to location
+                    </label>
+                </div>
+
+                <div class="form-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="notifyCommander">
+                        Notify Duty Commander
+                    </label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeEscalateModal()">Cancel</button>
+                <button class="btn btn-danger" onclick="confirmEscalation()">
+                    🚨 Confirm Escalation
                 </button>
             </div>
         </div>
