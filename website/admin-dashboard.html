@@ -46,7 +46,6 @@
             
             <div class="sidebar-footer">
                 <button onclick="logout()" class="btn-logout">
-                    
                     <span>Logout</span>
                 </button>
             </div>
@@ -350,9 +349,8 @@
             <section id="users" class="content-section">
                 <div class="section-header">
                     <h2>User Management</h2>
-                    <button class="btn btn-primary">Add User</button>
+                    <button class="btn btn-primary" onclick="openAddUserModal()">Add User</button>
                 </div>
-
                 <div class="users-grid">
                     <div class="user-card">
                         <div class="user-avatar">👤</div>
@@ -361,7 +359,6 @@
                         <span class="tag green">Active</span>
                         <p class="small-text">Reports: 5 | Joined: Jan 2025</p>
                     </div>
-
                     <div class="user-card">
                         <div class="user-avatar">👤</div>
                         <h4>Jane Smith</h4>
@@ -369,7 +366,6 @@
                         <span class="tag green">Active</span>
                         <p class="small-text">Reports: 3 | Joined: Feb 2025</p>
                     </div>
-
                     <div class="user-card">
                         <div class="user-avatar">👤</div>
                         <h4>Anonymous User</h4>
@@ -384,7 +380,7 @@
             <section id="alerts" class="content-section">
                 <div class="section-header">
                     <h2>Emergency Alerts</h2>
-                    <button class="btn btn-danger">Create Alert</button>
+                    <button class="btn btn-danger" onclick="openCreateAlertModal()">Create Alert</button>
                 </div>
 
                 <div class="alerts-list">
@@ -397,8 +393,8 @@
                         <p><strong>Type:</strong> Assault in Progress</p>
                         <p><strong>Status:</strong> Dispatched to JDF</p>
                         <div class="alert-actions">
-                            <button class="btn btn-danger">View Details</button>
-                            <button class="btn btn-secondary">Contact User</button>
+                            <button class="btn btn-danger" onclick="viewAlertDetails('alert-5678')">View Details</button>
+                            <button class="btn btn-secondary" onclick="contactUser('alert-5678')">Contact User</button>
                         </div>
                     </div>
 
@@ -411,8 +407,8 @@
                         <p><strong>AI Confidence:</strong> High (95%)</p>
                         <p><strong>Status:</strong> Awaiting Review</p>
                         <div class="alert-actions">
-                            <button class="btn btn-primary">Review Chat</button>
-                            <button class="btn btn-danger">Escalate</button>
+                            <button class="btn btn-primary" onclick="reviewChat('chat-9012')">Review Chat</button>
+                            <button class="btn btn-danger" onclick="openEscalateModal('chat-9012')">Escalate</button>
                         </div>
                     </div>
                 </div>
@@ -461,6 +457,476 @@
                 </div>
             </section>
         </main>
+    </div>
+
+    <!-- Add User Modal -->
+    <div id="addUserModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Add New User</h3>
+                <button class="close-btn" onclick="closeAddUserModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="info-text">
+                    Create login credentials for system administrators or law enforcement personnel.
+                </div>
+
+                <form id="addUserForm" onsubmit="handleAddUser(event)">
+                    <!-- Role Selection -->
+                    <div class="role-select">
+                        <label>Select User Role *</label>
+                        <div class="role-options">
+                            <div class="role-option">
+                                <input type="radio" id="roleAdmin" name="role" value="admin" checked>
+                                <label for="roleAdmin" class="role-label">System Admin</label>
+                            </div>
+                            <div class="role-option">
+                                <input type="radio" id="roleLawEnforcement" name="role" value="law_enforcement">
+                                <label for="roleLawEnforcement" class="role-label">Law Enforcement</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Personal Information -->
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="firstName">First Name *</label>
+                            <input type="text" id="firstName" required placeholder="Enter first name">
+                        </div>
+                        <div class="form-group">
+                            <label for="lastName">Last Name *</label>
+                            <input type="text" id="lastName" required placeholder="Enter last name">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="email">Email Address *</label>
+                        <input type="email" id="email" required placeholder="user@example.com">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="badgeId">Badge ID / Employee ID</label>
+                        <input type="text" id="badgeId" placeholder="Optional for law enforcement">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="department">Department</label>
+                        <select id="department">
+                            <option value="">Select Department</option>
+                            <option value="administration">Administration</option>
+                            <option value="patrol">Patrol Division</option>
+                            <option value="investigations">Investigations</option>
+                            <option value="cybercrime">Cybercrime Unit</option>
+                            <option value="community">Community Relations</option>
+                        </select>
+                    </div>
+
+                    <!-- Login Credentials -->
+                    <div class="form-group">
+                        <label for="username">Username *</label>
+                        <input type="text" id="username" required placeholder="Create username">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="password">Password *</label>
+                        <input type="password" id="password" required placeholder="Create secure password" oninput="checkPasswordStrength()">
+                        <div class="password-strength">
+                            <div id="passwordStrengthBar" class="password-strength-bar"></div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="confirmPassword">Confirm Password *</label>
+                        <input type="password" id="confirmPassword" required placeholder="Re-enter password">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="accessLevel">Access Level *</label>
+                        <select id="accessLevel" required>
+                            <option value="">Select Access Level</option>
+                            <option value="full">Full Access</option>
+                            <option value="standard">Standard Access</option>
+                            <option value="limited">Limited Access</option>
+                            <option value="view_only">View Only</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeAddUserModal()">Cancel</button>
+                <button class="btn btn-success" onclick="document.getElementById('addUserForm').requestSubmit()">Create User</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Alert Modal -->
+    <div id="createAlertModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>🚨 Create Emergency Alert</h3>
+                <button class="close-btn" onclick="closeCreateAlertModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="info-text">
+                    Broadcast an emergency alert to law enforcement agencies and relevant authorities.
+                </div>
+
+                <form id="createAlertForm" onsubmit="handleCreateAlert(event)">
+                    <!-- Alert Type Selection -->
+                    <div class="alert-type-select">
+                        <label>Alert Priority Level *</label>
+                        <div class="priority-options">
+                            <div class="priority-option">
+                                <input type="radio" id="priorityCritical" name="priority" value="critical" checked>
+                                <label for="priorityCritical" class="priority-label critical">
+                                    <span class="priority-icon">🚨</span>
+                                    Critical
+                                </label>
+                            </div>
+                            <div class="priority-option">
+                                <input type="radio" id="priorityHigh" name="priority" value="high">
+                                <label for="priorityHigh" class="priority-label high">
+                                    <span class="priority-icon">⚠️</span>
+                                    High
+                                </label>
+                            </div>
+                            <div class="priority-option">
+                                <input type="radio" id="priorityMedium" name="priority" value="medium">
+                                <label for="priorityMedium" class="priority-label medium">
+                                    <span class="priority-icon">⚡</span>
+                                    Medium
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Alert Details -->
+                    <div class="form-group">
+                        <label for="alertTitle">Alert Title *</label>
+                        <input type="text" id="alertTitle" required placeholder="e.g., Armed Robbery in Progress">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="alertType">Incident Type *</label>
+                        <select id="alertType" required>
+                            <option value="">Select Incident Type</option>
+                            <option value="assault">Assault</option>
+                            <option value="robbery">Robbery</option>
+                            <option value="burglary">Burglary</option>
+                            <option value="shooting">Shooting</option>
+                            <option value="kidnapping">Kidnapping</option>
+                            <option value="domestic_violence">Domestic Violence</option>
+                            <option value="suspicious_activity">Suspicious Activity</option>
+                            <option value="public_disturbance">Public Disturbance</option>
+                            <option value="missing_person">Missing Person</option>
+                            <option value="other">Other Emergency</option>
+                        </select>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="alertLocation">Location *</label>
+                            <input type="text" id="alertLocation" required placeholder="Address or area">
+                        </div>
+                        <div class="form-group">
+                            <label for="alertParish">Parish *</label>
+                            <select id="alertParish" required>
+                                <option value="">Select Parish</option>
+                                <option value="kingston">Kingston</option>
+                                <option value="st_andrew">St. Andrew</option>
+                                <option value="st_thomas">St. Thomas</option>
+                                <option value="portland">Portland</option>
+                                <option value="st_mary">St. Mary</option>
+                                <option value="st_ann">St. Ann</option>
+                                <option value="trelawny">Trelawny</option>
+                                <option value="st_james">St. James</option>
+                                <option value="hanover">Hanover</option>
+                                <option value="westmoreland">Westmoreland</option>
+                                <option value="st_elizabeth">St. Elizabeth</option>
+                                <option value="manchester">Manchester</option>
+                                <option value="clarendon">Clarendon</option>
+                                <option value="st_catherine">St. Catherine</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="alertDescription">Description *</label>
+                        <textarea id="alertDescription" required placeholder="Provide detailed information about the emergency..." rows="4"></textarea>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="suspectDescription">Suspect Description</label>
+                            <input type="text" id="suspectDescription" placeholder="Physical description, clothing, etc.">
+                        </div>
+                        <div class="form-group">
+                            <label for="vehicleInfo">Vehicle Information</label>
+                            <input type="text" id="vehicleInfo" placeholder="Make, model, license plate">
+                        </div>
+                    </div>
+
+                    <!-- Notify Agencies -->
+                    <div class="notify-agencies">
+                        <label>Notify Agencies *</label>
+                        <div class="agency-checkboxes">
+                            <label class="agency-checkbox">
+                                <input type="checkbox" name="agencies" value="JCF" checked>
+                                <span class="agency-name">Jamaica Constabulary Force (JCF)</span>
+                            </label>
+                            <label class="agency-checkbox">
+                                <input type="checkbox" name="agencies" value="JDF">
+                                <span class="agency-name">Jamaica Defence Force (JDF)</span>
+                            </label>
+                            <label class="agency-checkbox">
+                                <input type="checkbox" name="agencies" value="JCDF">
+                                <span class="agency-name">Jamaica Combined Defence Force (JCDF)</span>
+                            </label>
+                            <label class="agency-checkbox">
+                                <input type="checkbox" name="agencies" value="NSA">
+                                <span class="agency-name">National Security Agency</span>
+                            </label>
+                            <label class="agency-checkbox">
+                                <input type="checkbox" name="agencies" value="FIRESERVICE">
+                                <span class="agency-name">Fire Services</span>
+                            </label>
+                            <label class="agency-checkbox">
+                                <input type="checkbox" name="agencies" value="EMS">
+                                <span class="agency-name">Emergency Medical Services</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="sendSMS">
+                            Send SMS alerts to nearby officers
+                        </label>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="publicAlert">
+                            Make this a public safety alert
+                        </label>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeCreateAlertModal()">Cancel</button>
+                <button class="btn btn-danger" onclick="document.getElementById('createAlertForm').requestSubmit()">
+                    🚨 Broadcast Alert
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- View Alert Details Modal -->
+    <div id="viewDetailsModal" class="modal">
+        <div class="modal-content" style="max-width: 800px;">
+            <div class="modal-header">
+                <h3>🚨 Alert Details</h3>
+                <button class="close-btn" onclick="closeViewDetailsModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="alertDetailsContent">
+                    <!-- Content will be dynamically inserted here -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeViewDetailsModal()">Close</button>
+                <button class="btn btn-danger">Update Status</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Contact User Modal -->
+    <div id="contactUserModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>📞 Contact User</h3>
+                <button class="close-btn" onclick="closeContactUserModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="info-text">
+                    Choose how you'd like to contact this user regarding their emergency alert.
+                </div>
+
+                <div class="contact-method-grid">
+                    <div class="contact-method-card" onclick="initiateCall()">
+                        <div class="contact-icon">📞</div>
+                        <h4>Voice Call</h4>
+                        <p>Call user directly</p>
+                        <button class="btn btn-full btn-primary">Initiate Call</button>
+                    </div>
+
+                    <div class="contact-method-card" onclick="sendSMS()">
+                        <div class="contact-icon">💬</div>
+                        <h4>SMS Message</h4>
+                        <p>Send text message</p>
+                        <button class="btn btn-full btn-primary">Send SMS</button>
+                    </div>
+
+                    <div class="contact-method-card" onclick="openChat()">
+                        <div class="contact-icon">💭</div>
+                        <h4>Live Chat</h4>
+                        <p>Start chat session</p>
+                        <button class="btn btn-full btn-primary">Open Chat</button>
+                    </div>
+                </div>
+
+                <div class="user-contact-info">
+                    <h4>User Information</h4>
+                    <div id="userContactDetails">
+                        <!-- Content will be dynamically inserted -->
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="contactMessage">Quick Message (Optional)</label>
+                    <textarea id="contactMessage" placeholder="Type a message to send to the user..." rows="3"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeContactUserModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="sendQuickMessage()">Send Message</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Review Chat Modal -->
+    <div id="reviewChatModal" class="modal">
+        <div class="modal-content" style="max-width: 900px;">
+            <div class="modal-header">
+                <h3>💬 Chat Transcript Review</h3>
+                <button class="close-btn" onclick="closeReviewChatModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="chat-review-header">
+                    <div class="chat-review-info">
+                        <p><strong>Chat ID:</strong> <span id="reviewChatId">#9012</span></p>
+                        <p><strong>User:</strong> <span id="reviewUserId">#5678</span></p>
+                        <p><strong>Duration:</strong> <span id="chatDuration">5 minutes</span></p>
+                        <p><strong>AI Confidence:</strong> <span class="tag red">High (95%)</span></p>
+                    </div>
+                    <div class="ai-analysis-box">
+                        <h4>🤖 AI Analysis</h4>
+                        <p><strong>Detected:</strong> Threatening Language</p>
+                        <p><strong>Keywords:</strong> weapon, hurt, tonight</p>
+                        <p><strong>Sentiment:</strong> Hostile</p>
+                        <p><strong>Urgency:</strong> Critical</p>
+                    </div>
+                </div>
+
+                <div class="chat-transcript">
+                    <h4>Full Conversation Transcript</h4>
+                    <div id="chatTranscriptContent" class="transcript-messages">
+                        <!-- Content will be dynamically inserted -->
+                    </div>
+                </div>
+
+                <div class="review-actions-section">
+                    <h4>Review Actions</h4>
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" id="threatConfirmed">
+                            Confirm threat is genuine
+                        </label>
+                    </div>
+                    <div class="form-group">
+                        <label for="reviewNotes">Admin Notes</label>
+                        <textarea id="reviewNotes" placeholder="Add your review notes..." rows="3"></textarea>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeReviewChatModal()">Close</button>
+                <button class="btn btn-warning" onclick="markAsFalsePositive()">Mark as False Positive</button>
+                <button class="btn btn-danger" onclick="escalateFromReview()">Escalate to Authorities</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Escalate Alert Modal -->
+    <div id="escalateModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>⚠️ Escalate Alert</h3>
+                <button class="close-btn" onclick="closeEscalateModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="alert-banner urgent">
+                    <div class="alert-icon">🚨</div>
+                    <div>
+                        <strong>CRITICAL ACTION REQUIRED</strong><br>
+                        <span style="font-size: 0.9rem;">This will immediately notify law enforcement agencies</span>
+                    </div>
+                </div>
+
+                <div class="escalation-info">
+                    <h4>Alert Information</h4>
+                    <div id="escalationAlertInfo">
+                        <!-- Content will be dynamically inserted -->
+                    </div>
+                </div>
+
+                <div class="notify-agencies">
+                    <label>Select Agencies to Notify *</label>
+                    <div class="agency-checkboxes">
+                        <label class="agency-checkbox">
+                            <input type="checkbox" name="escalateAgencies" value="JCF" checked>
+                            <span class="agency-name">Jamaica Constabulary Force (JCF)</span>
+                        </label>
+                        <label class="agency-checkbox">
+                            <input type="checkbox" name="escalateAgencies" value="JDF">
+                            <span class="agency-name">Jamaica Defence Force (JDF)</span>
+                        </label>
+                        <label class="agency-checkbox">
+                            <input type="checkbox" name="escalateAgencies" value="JCDF">
+                            <span class="agency-name">Jamaica Combined Defence Force (JCDF)</span>
+                        </label>
+                        <label class="agency-checkbox">
+                            <input type="checkbox" name="escalateAgencies" value="NSA" checked>
+                            <span class="agency-name">National Security Agency</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="escalationPriority">Escalation Priority *</label>
+                    <select id="escalationPriority" required>
+                        <option value="critical" selected>Critical - Immediate Response</option>
+                        <option value="high">High Priority</option>
+                        <option value="standard">Standard</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="escalationReason">Reason for Escalation *</label>
+                    <textarea id="escalationReason" required placeholder="Describe why this alert requires escalation..." rows="4"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="dispatchUnits">
+                        Request immediate dispatch of units to location
+                    </label>
+                </div>
+
+                <div class="form-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="notifyCommander">
+                        Notify Duty Commander
+                    </label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeEscalateModal()">Cancel</button>
+                <button class="btn btn-danger" onclick="confirmEscalation()">
+                    🚨 Confirm Escalation
+                </button>
+            </div>
+        </div>
     </div>
 
     <script src="script.js"></script>
