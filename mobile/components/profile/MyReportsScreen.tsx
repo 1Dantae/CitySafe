@@ -1,11 +1,12 @@
 import { Ionicons } from '@expo/vector-icons';
-import React from 'react';
+import React, { useEffect } from 'react';
 import {
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
+  Image,
 } from 'react-native';
 import { Colors } from '../../constants/colors';
 import { useUserProfile } from './UserProfileContext';
@@ -15,7 +16,13 @@ interface MyReportsScreenProps {
 }
 
 const MyReportsScreen: React.FC<MyReportsScreenProps> = ({ onBack }) => {
-  const { reports } = useUserProfile();
+  const { reports, user, fetchMyReports } = useUserProfile();
+
+  useEffect(() => {
+    if (user?.id) fetchMyReports(user.id);
+    else fetchMyReports();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
 
   return (
     <View style={styles.container}>
@@ -50,6 +57,10 @@ const MyReportsScreen: React.FC<MyReportsScreenProps> = ({ onBack }) => {
                   )}
                 </View>
                 <Text style={styles.reportDate}>{report.date}</Text>
+                {/** Show image if backend provided media_url */}
+                {report.media_url ? (
+                  <Image source={{ uri: report.media_url }} style={{ width: '100%', height: 200, borderRadius: 8, marginBottom: 8 }} />
+                ) : null}
                 <Text style={styles.reportDescription}>{report.description}</Text>
               </TouchableOpacity>
             ))}

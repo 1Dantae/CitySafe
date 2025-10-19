@@ -14,6 +14,7 @@ interface Report {
   location: string;
   date: string;
   status: 'pending' | 'in-progress' | 'resolved';
+  media_url?: string;
 }
 
 interface UserProfileState {
@@ -26,6 +27,7 @@ type UserProfileAction =
   | { type: 'SET_USER'; payload: User }
   | { type: 'UPDATE_USER'; payload: Partial<User> }
   | { type: 'ADD_REPORT'; payload: Report }
+  | { type: 'SET_REPORTS'; payload: Report[] }
   | { type: 'UPDATE_REPORT'; payload: Report }
   | { type: 'SET_LOADING'; payload: boolean }
   | { type: 'CLEAR_USER' };
@@ -44,6 +46,8 @@ const UserProfileReducer = (state: UserProfileState, action: UserProfileAction):
       return { ...state, user: state.user ? { ...state.user, ...action.payload } : null };
     case 'ADD_REPORT':
       return { ...state, reports: [...state.reports, action.payload] };
+    case 'SET_REPORTS':
+      return { ...state, reports: action.payload };
     case 'UPDATE_REPORT':
       return {
         ...state,
@@ -64,6 +68,7 @@ interface UserProfileContextType extends UserProfileState {
   setUser: (user: User) => void;
   updateUser: (userData: Partial<User>) => void;
   addReport: (report: Report) => void;
+  fetchMyReports: (userId?: string) => Promise<void>;
   updateReport: (report: Report) => void;
   clearUser: () => void;
   setLoading: (loading: boolean) => void;
@@ -101,6 +106,29 @@ export const UserProfileProvider: React.FC<UserProfileProviderProps> = ({ childr
     dispatch({ type: 'ADD_REPORT', payload: report });
   };
 
+  const fetchMyReports = async (userId?: string) => {
+    setLoading(true);
+    try {
+      // lazy import to avoid circular deps
+      const api = await import('../../../mobile/services/api');
+      const reports = await api.getReports(0, 100, userId);
+      // map backend shape to local Report shape
+      const mapped = (reports || []).map((r: any) => ({
+        id: r.id || r._id,
+        title: r.incidentType || 'Report',
+        description: r.description || '',
+        location: typeof r.location === 'string' ? r.location : (r.location?.coordinates ? `${r.location.coordinates[1]}, ${r.location.coordinates[0]}` : ''),
+        date: r.createdAt ? new Date(r.createdAt).toLocaleDateString() : '',
+        status: 'pending' as const,
+      }));
+      dispatch({ type: 'SET_REPORTS', payload: mapped });
+    } catch (err) {
+      console.error('Failed to fetch reports', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const updateReport = (report: Report) => {
     dispatch({ type: 'UPDATE_REPORT', payload: report });
   };
@@ -120,6 +148,7 @@ export const UserProfileProvider: React.FC<UserProfileProviderProps> = ({ childr
         setUser,
         updateUser,
         addReport,
+        fetchMyReports,
         updateReport,
         setLoading,
         clearUser,

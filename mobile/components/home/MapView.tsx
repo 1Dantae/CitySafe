@@ -1,27 +1,45 @@
 import { Ionicons } from '@expo/vector-icons';
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
+import * as Location from 'expo-location';
 import { Colors } from '../../constants/colors';
 
 interface MapViewProps {
   userType: 'anonymous' | 'user' | null;
 }
 
-const crimeReports = [
-  { id: 1, type: 'Theft', lat: 18.0179, lng: -76.8099, date: '2025-10-10' },
-  { id: 2, type: 'Vandalism', lat: 18.0199, lng: -76.8119, date: '2025-10-11' },
-  { id: 3, type: 'Assault', lat: 18.0159, lng: -76.8079, date: '2025-10-12' },
-];
-
 const CustomMapView: React.FC<MapViewProps> = ({ userType }) => {
   // Initial region centered on Kingston, Jamaica
-  const initialRegion = {
+  const defaultRegion = {
     latitude: 18.0256768,
     longitude: -76.7459328,
     latitudeDelta: 0.0922,
     longitudeDelta: 0.0421,
   };
+
+  const [region, setRegion] = useState(defaultRegion);
+  const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
+  // Placeholder list to avoid "Cannot find name 'crimeReports'"
+  const crimeReports: { id: string; type: string; date: string }[] = [];
+
+  useEffect(() => {
+    const getLocation = async () => {
+      try {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status === 'granted') {
+          const pos = await Location.getCurrentPositionAsync({});
+          const { latitude, longitude } = pos.coords;
+          setUserLocation({ latitude, longitude });
+          setRegion({ ...region, latitude, longitude });
+        }
+      } catch (err) {
+        console.warn('Location permission error', err);
+      }
+    };
+    getLocation();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Show placeholder for anonymous users
   if (userType === 'anonymous') {
@@ -42,25 +60,21 @@ const CustomMapView: React.FC<MapViewProps> = ({ userType }) => {
       <MapView
         provider={PROVIDER_GOOGLE}
         style={styles.map}
-        initialRegion={initialRegion}
+        initialRegion={region}
+        region={region}
         showsUserLocation={true}
         showsMyLocationButton={true}
         showsCompass={true}
         showsScale={true}
       >
-        {/* Crime Report Markers */}
-        {crimeReports.map((crime) => (
+       {userLocation && (
           <Marker
-            key={crime.id}
-            coordinate={{
-              latitude: crime.lat,
-              longitude: crime.lng,
-            }}
-            title={crime.type}
-            description={`Date: ${crime.date}`}
-            pinColor={Colors.emergency}
+            key={'__user_location__'}
+            coordinate={{ latitude: userLocation.latitude, longitude: userLocation.longitude }}
+            title={'Your Location'}
+            pinColor={'blue'}
           />
-        ))}
+        )}
       </MapView>
 
       {/* Crime Reports List Overlay */}

@@ -12,7 +12,6 @@ import React, { useState } from 'react';
 import {
   Alert,
   Image,
-  Platform,
   ScrollView,
   StyleSheet,
   Switch,
@@ -24,7 +23,8 @@ import {
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Colors } from '../../constants/colors';
 import { useUserProfile } from '../profile/UserProfileContext';
-import { submitReport } from '../../services/api';
+import { submitReport, getReportById } from '../../services/api';
+import * as Location from 'expo-location';
 
 interface ReportScreenProps {
   onBack: () => void;
@@ -258,59 +258,130 @@ const ReportScreen: React.FC<ReportScreenProps> = ({ onBack }) => {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const validateForm = () => {
+    // incident type
+    const incidentTypeValue = formData.incidentType === 'Other' ? customIncident : formData.incidentType;
+    if (!incidentTypeValue || incidentTypeValue.trim() === '') {
+      Alert.alert('Validation error', 'Please select or enter the type of incident.');
+      return false;
+    }
+
+    // location
+    if (!formData.location || formData.location.trim() === '') {
+      Alert.alert('Validation error', 'Please enter the location of the incident.');
+      return false;
+    }
+
+    // description
+    if (!formData.description || formData.description.trim() === '') {
+      Alert.alert('Validation error', 'Please enter a description of the incident.');
+      return false;
+    }
+
+    // date & time - if missing we will set defaults later but warn user
+    // require at least date or time to be set (or provide defaults)
+    // (we'll auto-fill below if missing)
+
+    // contact info when not anonymous
+    if (!formData.anonymous) {
+      if (!formData.name || formData.name.trim() === '') {
+        Alert.alert('Validation error', 'Please enter your name or toggle anonymous.');
+        return false;
+      }
+      if (!formData.phone || formData.phone.trim() === '') {
+        Alert.alert('Validation error', 'Please enter your phone number or toggle anonymous.');
+        return false;
+      }
+      if (!formData.email || formData.email.trim() === '') {
+        Alert.alert('Validation error', 'Please enter your email or toggle anonymous.');
+        return false;
+      }
+    }
+
+    return true;
+  };
+
   const handleSubmit = async () => {
     if (isSubmitting) return; // Prevent multiple submissions
     
-    if (!formData.incidentType || !formData.location || !formData.description) {
-      Alert.alert('Error', 'Please fill in all required fields');
-      return;
-    }
+    // Validate form fields
+    if (!validateForm()) return;
 
     setIsSubmitting(true);
 
     try {
+      // Request device location and include coordinates when available
+      let lat: number | undefined = undefined;
+      let lng: number | undefined = undefined;
+      try {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status === 'granted') {
+          const pos = await Location.getCurrentPositionAsync({});
+          lat = pos.coords.latitude;
+          lng = pos.coords.longitude;
+        }
+      } catch (err) {
+        console.warn('Could not get device location', err);
+      }
       // Prepare report data
-      const reportData = {
-        incidentType: formData.incidentType === 'Other' && customIncident 
-          ? customIncident 
-          : formData.incidentType,
-        date: formData.date,
-        time: formData.time,
+      // Ensure incidentType uses customIncident if provided
+      const incidentTypeValue = formData.incidentType === 'Other' && customIncident
+        ? customIncident
+        : formData.incidentType;
+
+      // Fill default date/time if not provided
+      const finalDate = formData.date && formData.date.trim() !== '' ? formData.date : format(new Date(), 'MMM dd, yyyy');
+      const finalTime = formData.time && formData.time.trim() !== '' ? formData.time : format(new Date(), 'hh:mm a');
+
+      // Sanitize media payload
+      let mediaPayload: any = undefined;
+      if (pickedImage) {
+        const name = pickedImage.split('/').pop() || 'media';
+        const type = getMediaType(pickedImage) || 'image/jpeg';
+        mediaPayload = { uri: pickedImage, name, type };
+      }
+
+      const reportData: any = {
+        incidentType: incidentTypeValue,
+        date: finalDate,
+        time: finalTime,
         location: formData.location,
         description: formData.description,
         anonymous: formData.anonymous,
         name: formData.anonymous ? undefined : formData.name,
         phone: formData.anonymous ? undefined : formData.phone,
         email: formData.anonymous ? undefined : formData.email,
-        media: pickedImage ? { 
-          uri: pickedImage, 
-          name: pickedImage.split('/').pop() || 'media', 
-          type: getMediaType(pickedImage) 
-        } : undefined,
+        media: mediaPayload,
       };
 
       // Submit report to backend
+      // attach lat/lng if available
+      if (lat !== undefined && lng !== undefined) {
+        // @ts-ignore
+        reportData.lat = lat;
+        // @ts-ignore
+        reportData.lng = lng;
+      }
+
       const result = await submitReport(reportData);
 
-      // Create a report object to add to the user's profile
-      const reportDate = formData.date ? new Date(formData.date.split('/').reverse().join('/')) : new Date();
-      const formattedDate = reportDate.toLocaleDateString('en-US', { 
-        year: 'numeric', 
-        month: 'short', 
-        day: 'numeric' 
-      });
-      
-      const newReport = {
-        id: result.id, // Use the ID from the backend
-        title: reportData.incidentType,
-        description: formData.description,
-        location: formData.location,
-        date: formattedDate,
-        status: 'pending' as const,
-      };
-
-      // Add the report to the user's profile
-      addReport(newReport);
+      // fetch full report from backend and add to local context
+      try {
+        const full = await getReportById(result.id);
+        // Transform backend document to local Report shape
+        const formattedDate = full.createdAt ? new Date(full.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : (formData.date || new Date().toLocaleDateString());
+        const reportObj = {
+          id: full.id || result.id,
+          title: full.incidentType || reportData.incidentType,
+          description: full.description || reportData.description,
+          location: full.location && typeof full.location === 'string' ? full.location : (full.location?.coordinates ? `${full.location.coordinates[1]}, ${full.location.coordinates[0]}` : formData.location),
+          date: formattedDate,
+          status: 'pending' as const,
+        };
+        addReport(reportObj);
+      } catch (err) {
+        console.warn('Could not fetch full report after submit', err);
+      }
 
       Alert.alert('Success', 'Report submitted successfully!', [
         { text: 'OK', onPress: onBack },

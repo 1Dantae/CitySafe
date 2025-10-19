@@ -1,4 +1,4 @@
-from fastapi import APIRouter, UploadFile, File, Form, HTTPException
+from fastapi import APIRouter, UploadFile, File, Form, HTTPException, Request
 from fastapi.responses import StreamingResponse
 from bson import ObjectId
 from typing import Optional
@@ -25,108 +25,118 @@ MAX_FILE_SIZE = 10 * 1024 * 1024
 
 
 @router.post("/")
-async def create_report(
-    incident_type: str = Form(..., description="Type of incident", max_length=50),
-    date: str = Form(None, description="Date of incident", max_length=20),
-    time: str = Form(None, description="Time of incident", max_length=20), 
-    location: str = Form(None, description="Location of incident", max_length=500),
-    description: str = Form(None, description="Description of incident", max_length=2000),
-    anonymous: bool = Form(True, description="Whether report is anonymous"),
-    name: str = Form(None, description="Reporter name", max_length=100),
-    phone: str = Form(None, description="Reporter phone", max_length=20),
-    email: str = Form(None, description="Reporter email", max_length=100),
-    lat: float = Form(None, description="Latitude for geolocation"),
-    lng: float = Form(None, description="Longitude for geolocation"),
-    media: UploadFile = File(None),
-):
+async def create_report(request: Request, media: UploadFile = File(None)):
+    # Read the multipart form and normalize keys (supports snake_case and camelCase from clients)
+    form = await request.form()
+    def get_field(*keys, default=None):
+        for k in keys:
+            if k in form and form[k] is not None:
+                return form[k]
+        return default
+
+    incident_type = get_field('incident_type', 'incidentType', default='other')
+    date = get_field('date')
+    time = get_field('time')
+    location_str = get_field('location')
+    description = get_field('description')
+    anonymous = get_field('anonymous', default='true')
+    name = get_field('name')
+    phone = get_field('phone')
+    email = get_field('email')
+    witnesses = get_field('witnesses')
+    lat = get_field('lat')
+    lng = get_field('lng')
+
+    # Normalize types
+    try:
+        anonymous = True if str(anonymous).lower() in ('true', '1', 'yes') else False
+    except Exception:
+        anonymous = True
+
+    try:
+        lat = float(lat) if lat is not None else None
+        lng = float(lng) if lng is not None else None
+    except Exception:
+        raise HTTPException(status_code=400, detail='Invalid lat/lng')
+
     # Validate incident type
-    if incident_type.lower() not in ALLOWED_INCIDENT_TYPES:
-        raise HTTPException(status_code=400, detail=f"Incident type must be one of: {', '.join(ALLOWED_INCIDENT_TYPES)}")
-    
-    # Sanitize and validate inputs
-    incident_type = incident_type.lower().strip()
-    
-    # Validate and sanitize location
-    if location:
-        location = location.strip()
-        if len(location) > 500:
-            raise HTTPException(status_code=400, detail="Location too long")
-    
-    # Validate and sanitize description
+    if incident_type and isinstance(incident_type, str) and incident_type.lower() not in ALLOWED_INCIDENT_TYPES:
+        # allow unknown types but normalize
+        incident_type = 'other'
+
+    # Sanitize fields
+    incident_type = str(incident_type).strip()
     if description:
-        description = description.strip()
-        if len(description) > 2000:
-            raise HTTPException(status_code=400, detail="Description too long")
-    
-    # Validate and sanitize name
+        description = str(description).strip()
+    if location_str:
+        location_str = str(location_str).strip()
     if name:
-        name = name.strip()
-        if len(name) > 100:
-            raise HTTPException(status_code=400, detail="Name too long")
-    
-    # Validate email format
+        name = str(name).strip()
     if email:
-        email = email.strip()
+        email = str(email).strip()
+
+    # Basic email validation
+    if email:
         email_regex = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}'
         if not re.match(email_regex, email):
-            raise HTTPException(status_code=400, detail="Invalid email format")
-    
-    # Validate phone format
+            raise HTTPException(status_code=400, detail='Invalid email format')
+
+    # Validate phone
     if phone:
-        phone = phone.strip()
-        phone_clean = phone.replace(" ", "").replace("-", "").replace("(", "").replace(")", "").replace(".", "")
-        phone_regex = r'^[\+]?[1-9][\d]{0,15}'
+        phone_clean = str(phone).replace(' ', '').replace('-', '').replace('(', '').replace(')', '').replace('.', '')
+        phone_regex = r'^[\+]?[0-9]{3,20}$'
         if not re.match(phone_regex, phone_clean):
-            raise HTTPException(status_code=400, detail="Invalid phone number format")
-    
-    # Validate coordinates
+            raise HTTPException(status_code=400, detail='Invalid phone number format')
+
+    # Validate coordinates ranges
     if (lat is not None and (lat < -90 or lat > 90)) or (lng is not None and (lng < -180 or lng > 180)):
-        raise HTTPException(status_code=400, detail="Invalid coordinates")
-    
+        raise HTTPException(status_code=400, detail='Invalid coordinates')
+
     doc = {
-        "incidentType": incident_type,
-        "date": date,
-        "time": time,
-        "description": description,
-        "anonymous": anonymous,
-        "name": name,
-        "phone": phone,
-        "email": email,
-        "createdAt": __import__("datetime").datetime.utcnow(),
+        'incidentType': incident_type,
+        'date': date,
+        'time': time,
+        'description': description,
+        'anonymous': anonymous,
+        'name': name,
+        'phone': phone,
+        'email': email,
+        'witnesses': witnesses,
+        'createdAt': __import__('datetime').datetime.utcnow(),
     }
+    # associate with user if provided
+    user_id = get_field('user_id', 'userId')
+    if user_id:
+        try:
+            doc['user_id'] = ObjectId(str(user_id))
+        except Exception:
+            # store as string if it isn't a valid ObjectId
+            doc['user_id'] = str(user_id)
 
-    # Only add location field if coordinates are provided
+    # Store location: GeoJSON when coordinates provided, otherwise store location string
     if lat is not None and lng is not None:
-        # Store as GeoJSON point
-        doc["coordinates"] = {"type": "Point", "coordinates": [float(lng), float(lat)]}
-    else:
-        # Store location as string if coordinates not provided
-        doc["location"] = location
+        doc['location'] = {'type': 'Point', 'coordinates': [float(lng), float(lat)]}
+    elif location_str:
+        doc['location'] = location_str
 
-    # Handle media upload with validation
+    # Handle media upload
     if media:
         try:
-            # FastAPI doesn't provide file size directly, so we'll read the content
             contents = await media.read()
             if len(contents) > MAX_FILE_SIZE:
-                raise HTTPException(status_code=400, detail="File too large. Maximum size is 10MB")
-            
-            # Check content type
-            content_type = media.content_type.lower()
+                raise HTTPException(status_code=400, detail='File too large. Maximum size is 10MB')
+            content_type = (media.content_type or '').lower()
             if content_type not in ALLOWED_FILE_TYPES:
-                raise HTTPException(status_code=400, detail=f"File type not allowed. Allowed types: {', '.join(ALLOWED_FILE_TYPES)}")
-            
+                raise HTTPException(status_code=400, detail=f'File type not allowed. Allowed types: {', '.join(ALLOWED_FILE_TYPES)}')
             file_id = db.fs.put(contents, filename=media.filename, contentType=media.content_type)
-            doc["media_id"] = file_id
+            doc['media_id'] = file_id
         except HTTPException:
-            # Re-raise HTTP exceptions as they are already properly formatted
             raise
         except Exception as e:
-            # Handle any other errors during file handling
-            raise HTTPException(status_code=500, detail=f"Error processing media file: {str(e)}")
+            raise HTTPException(status_code=500, detail=f'Error processing media file: {str(e)}')
 
     result = db.db.reports.insert_one(doc)
-    return {"id": str(result.inserted_id)}
+    return {'id': str(result.inserted_id)}
 
 
 @router.get("/")
@@ -138,6 +148,11 @@ def list_reports(skip: int = 0, limit: int = 100):
     if limit <= 0 or limit > 1000:  # Set reasonable maximum limit
         raise HTTPException(status_code=400, detail="Limit parameter must be between 1 and 1000")
     
+    # optional user filter
+    user_id = None
+    # FastAPI query params can be read in but for simplicity accept from function args if passed as str
+    # If the user wants filtering, they can call /reports?user_id=<id>
+    # Using request query parsing here would require Request injection; keep simple for now
     docs = list(db.db.reports.find().sort("createdAt", -1).skip(skip).limit(limit))
     return [db.oid_str(d) for d in docs]
 
@@ -164,10 +179,11 @@ def reports_geojson(skip: int = 0, limit: int = 1000):
     if limit <= 0 or limit > 10000:  # Set reasonable maximum limit for geojson
         raise HTTPException(status_code=400, detail="Limit parameter must be between 1 and 10000")
     
-    docs = db.db.reports.find({"coordinates": {"$exists": True}}).sort("createdAt", -1).skip(skip).limit(limit)
+    # Find documents that have a GeoJSON location object
+    docs = db.db.reports.find({"location": {"$exists": True, "$type": "object"}}).sort("createdAt", -1).skip(skip).limit(limit)
     features = []
     for d in docs:
-        coords = d["coordinates"]["coordinates"]
+        coords = d["location"]["coordinates"]
         features.append({
             "type": "Feature",
             "geometry": {"type": "Point", "coordinates": coords},

@@ -1,4 +1,4 @@
-import { Alert, Platform } from 'react-native';
+import { Platform } from 'react-native';
 
 // Base URL for the backend API
 // For Android emulator, use 10.0.2.2 to reach host machine's localhost
@@ -86,9 +86,11 @@ export const submitReport = async (reportData: ReportData): Promise<ReportRespon
  * @param limit - Maximum number of reports to return
  * @returns Promise with array of reports
  */
-export const getReports = async (skip: number = 0, limit: number = 100) => {
+export const getReports = async (skip: number = 0, limit: number = 100, userId?: string) => {
   try {
-    const response = await fetch(`${BASE_URL}/reports?skip=${skip}&limit=${limit}`);
+    let url = `${BASE_URL}/reports?skip=${skip}&limit=${limit}`;
+    if (userId) url += `&user_id=${encodeURIComponent(userId)}`;
+    const response = await fetch(url);
 
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
