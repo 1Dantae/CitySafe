@@ -3,17 +3,15 @@ import React, { useState, useRef, useEffect } from 'react';
 import {
   Alert,
   FlatList,
-  Keyboard,
   KeyboardAvoidingView,
   Platform,
-  SafeAreaView,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
-import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { Colors } from '../../constants/colors';
 import { getGeminiResponse } from '../../services/geminiService';
 
@@ -28,29 +26,14 @@ const ChatScreen: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
-      text: 'Hello! I\'m your CitySafe safety assistant powered by Gemini AI. I can help you with safety information about locations in Jamaica, travel advice, or answer any questions about staying safe. How can I help you today?',
+      text: 'Hello! I\'m your CitySafe safety assistant. I can help you with safety information about locations in Jamaica, or answer any questions about staying safe. How can I help you today?',
       sender: 'system',
       timestamp: new Date(),
     }
   ]);
   const [inputText, setInputText] = useState('');
   const [isLoading, setIsLoading] = useState(false); // Track loading state
-  const [isKeyboardVisible, setKeyboardVisible] = useState(false);
   const flatListRef = useRef<FlatList>(null);
-
-  useEffect(() => {
-    const keyboardDidShowListener = Keyboard.addListener('keyboardDidShow', () => {
-      setKeyboardVisible(true);
-    });
-    const keyboardDidHideListener = Keyboard.addListener('keyboardDidHide', () => {
-      setKeyboardVisible(false);
-    });
-
-    return () => {
-      keyboardDidShowListener?.remove();
-      keyboardDidHideListener?.remove();
-    };
-  }, []);
 
   // Scroll to bottom when messages change
   useEffect(() => {
@@ -164,52 +147,43 @@ const ChatScreen: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       </View>
 
       {/* Messages */}
-      <View style={styles.messagesContainer}>
-        <FlatList
-          ref={flatListRef}
-          data={messages}
-          renderItem={renderMessage}
-          keyExtractor={(item) => item.id}
-          style={styles.messagesList}
-          contentContainerStyle={styles.messagesContent}
-          onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
-        />
-      </View>
+      <FlatList
+        ref={flatListRef}
+        data={messages}
+        renderItem={renderMessage}
+        keyExtractor={(item) => item.id}
+        style={styles.messagesList}
+        contentContainerStyle={styles.messagesContainer}
+        onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
+      />
 
-      {/* Input Area - Positioned to appear over keyboard when visible */}
-      <View style={[
-        styles.inputContainerAbsolute,
-        isKeyboardVisible && styles.inputContainerVisible
-      ]}>
-        <KeyboardAvoidingView
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
-          style={styles.inputKeyboardAvoidingView}
-        >
-          <View style={styles.inputContainer}>
-            <View style={styles.inputWrapper}>
-              <TextInput
-                style={styles.textInput}
-                value={inputText}
-                onChangeText={setInputText}
-                placeholder="Type your message..."
-                placeholderTextColor={Colors.textLight}
-                multiline
-              />
-              <TouchableOpacity 
-                style={[styles.sendButton, (inputText.trim() && !isLoading) ? styles.sendButtonActive : null]}
-                onPress={handleSend}
-                disabled={!inputText.trim() || isLoading}
-              >
-                {isLoading ? (
-                  <Ionicons name="time" size={20} color={Colors.gray} />
-                ) : (
-                  <Ionicons name="send" size={20} color={inputText.trim() && !isLoading ? Colors.accent : Colors.gray} />
-                )}
-              </TouchableOpacity>
-            </View>
-          </View>
-        </KeyboardAvoidingView>
-      </View>
+      {/* Input Area */}
+      <KeyboardAvoidingView 
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.inputContainer}
+      >
+        <View style={styles.inputWrapper}>
+          <TextInput
+            style={styles.textInput}
+            value={inputText}
+            onChangeText={setInputText}
+            placeholder="Type your message..."
+            placeholderTextColor={Colors.textLight}
+            multiline
+          />
+          <TouchableOpacity 
+            style={[styles.sendButton, (inputText.trim() && !isLoading) ? styles.sendButtonActive : null]}
+            onPress={handleSend}
+            disabled={!inputText.trim() || isLoading}
+          >
+            {isLoading ? (
+              <Ionicons name="time" size={20} color={Colors.gray} />
+            ) : (
+              <Ionicons name="send" size={20} color={inputText.trim() ? Colors.white : Colors.gray} />
+            )}
+          </TouchableOpacity>
+        </View>
+      </KeyboardAvoidingView>
     </View>
   );
 };
@@ -239,14 +213,11 @@ const styles = StyleSheet.create({
   headerRight: {
     width: 24, // Spacer for alignment
   },
-  messagesContainer: {
+  messagesList: {
     flex: 1,
     paddingHorizontal: 16,
   },
-  messagesList: {
-    flex: 1,
-  },
-  messagesContent: {
+  messagesContainer: {
     paddingVertical: 16,
   },
   messageContainer: {
@@ -284,19 +255,6 @@ const styles = StyleSheet.create({
     color: Colors.gray,
     marginTop: 4,
     textAlign: 'right',
-  },
-  inputContainerAbsolute: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: Colors.background,
-  },
-  inputContainerVisible: {
-    // Styles when keyboard is visible
-  },
-  inputKeyboardAvoidingView: {
-    width: '100%',
   },
   inputContainer: {
     padding: 16,
