@@ -46,6 +46,7 @@ export interface ReportData {
   time?: string;
   location?: string;
   description?: string;
+  witnesses?: string;
   anonymous?: boolean;
   name?: string;
   phone?: string;
@@ -76,6 +77,7 @@ export const submitReport = async (reportData: ReportData, userId?: string): Pro
     if (reportData.time) formData.append('time', reportData.time);
     if (reportData.location) formData.append('location', reportData.location);
     if (reportData.description) formData.append('description', reportData.description);
+    if (reportData.witnesses) formData.append('witnesses', reportData.witnesses);
     if (reportData.anonymous !== undefined) formData.append('anonymous', reportData.anonymous.toString());
     if (reportData.name) formData.append('name', reportData.name);
     if (reportData.phone) formData.append('phone', reportData.phone);
@@ -92,27 +94,33 @@ export const submitReport = async (reportData: ReportData, userId?: string): Pro
 
     // Get auth token if available
     const authToken = await getAuthToken();
-    const headers: { [key: string]: string } = {
-      'Content-Type': 'multipart/form-data',
-    };
-    
+    const headers: { [key: string]: string } = {};
+    // IMPORTANT: do NOT set Content-Type when sending FormData in React Native
+    // The fetch implementation will set the correct multipart boundary automatically.
     if (authToken) {
       headers['Authorization'] = `Bearer ${authToken}`;
     }
 
-    const response = await fetch(`${BASE_URL}/reports`, {
-      method: 'POST',
-      body: formData,
-      headers,
-    });
+    const url = `${BASE_URL}/reports`;
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        body: formData,
+        headers,
+      });
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
+      }
+
+      const result: ReportResponse = await response.json();
+      return result;
+    } catch (err) {
+      // Log useful debug info without exposing tokens
+      console.error('Error submitting report to', url, 'authTokenPresent=', !!authToken, err);
+      throw err;
     }
-
-    const result: ReportResponse = await response.json();
-    return result;
   } catch (error) {
     console.error('Error submitting report:', error);
     throw error;
@@ -237,8 +245,29 @@ export const login = async (credentials: LoginCredentials): Promise<AuthResponse
     });
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
+      const text = await response.text().catch(() => '');
+      let message = `HTTP error! status: ${response.status}`;
+      try {
+        const errorData = text ? JSON.parse(text) : {};
+        const detail = errorData.detail;
+        if (detail) {
+          if (typeof detail === 'string') message = detail;
+          else if (Array.isArray(detail)) {
+            // Try to extract useful messages from validation array
+            const parts = detail.map((d: any) => (d.msg ? d.msg : JSON.stringify(d)));
+            message = parts.join(' | ');
+          } else {
+            message = JSON.stringify(detail);
+          }
+        } else if (errorData.message) {
+          message = errorData.message;
+        } else if (text) {
+          message = text;
+        }
+      } catch {
+        if (text) message = text;
+      }
+      throw new Error(message);
     }
 
     const result: AuthResponse = await response.json();
@@ -264,8 +293,28 @@ export const register = async (userData: RegisterData): Promise<AuthResponse> =>
     });
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
+      const text = await response.text().catch(() => '');
+      let message = `HTTP error! status: ${response.status}`;
+      try {
+        const errorData = text ? JSON.parse(text) : {};
+        const detail = errorData.detail;
+        if (detail) {
+          if (typeof detail === 'string') message = detail;
+          else if (Array.isArray(detail)) {
+            const parts = detail.map((d: any) => (d.msg ? d.msg : JSON.stringify(d)));
+            message = parts.join(' | ');
+          } else {
+            message = JSON.stringify(detail);
+          }
+        } else if (errorData.message) {
+          message = errorData.message;
+        } else if (text) {
+          message = text;
+        }
+      } catch {
+        if (text) message = text;
+      }
+      throw new Error(message);
     }
 
     const result: AuthResponse = await response.json();
@@ -286,6 +335,35 @@ export const logout = async (): Promise<void> => {
     await clearAuthToken();
   } catch (error) {
     console.error('Error during logout:', error);
+    throw error;
+  }
+};
+
+export const getUserProfile = async (): Promise<AuthResponse['user']> => {
+  try {
+    const authToken = await getAuthToken();
+    if (!authToken) throw new Error('No auth token');
+
+    const response = await fetch(`${BASE_URL}/auth/me`, {
+      headers: {
+        Authorization: `Bearer ${authToken}`,
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const result = await response.json();
+    // map backend user shape to client User
+    return {
+      id: result.id || result._id,
+      email: result.email,
+      fullName: result.fullName || result.full_name || '',
+      phone: result.phone,
+    } as AuthResponse['user'];
+  } catch (error) {
+    console.error('Error fetching profile:', error);
     throw error;
   }
 };

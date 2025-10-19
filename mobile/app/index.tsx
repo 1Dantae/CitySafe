@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { SafeAreaView, StatusBar, StyleSheet } from 'react-native';
-import AdminDashboard from '../components/admin/adminDashboard';
 import LoginScreen from '../components/auth/LoginScreen';
 import SignUpScreen from '../components/auth/SignUpScreen';
 import WelcomeScreen from '../components/auth/WelcomeScreen';
@@ -11,29 +10,42 @@ import MyReportsScreen from '../components/profile/MyReportsScreen';
 import ConnectionCheckScreen from '../components/connection/ConnectionCheckScreen';
 import { Colors } from '../constants/colors';
 import { UserProfileProvider, useUserProfile } from '../components/profile/UserProfileContext';
-import { getAuthToken, login } from '../services/api';
+import { getAuthToken, login, getUserProfile, clearAuthToken } from '../services/api';
 
 type Screen = 'connection' | 'welcome' | 'login' | 'signup' | 'home' | 'report' | 'profile' | 'myReports' | 'admin';
 type UserType = 'anonymous' | 'user' | 'admin' | null;
 
 // Separate component to handle user profile logic
 const AppContent = () => {
-  const [currentScreen, setCurrentScreen] = useState<Screen>('connection');
+  // Start on login screen per request
+  const [currentScreen, setCurrentScreen] = useState<Screen>('login');
   const [userType, setUserType] = useState<UserType>(null);
   const { setUser, addReport } = useUserProfile();
 
-  // Check if user is already logged in on app start
-  useEffect(() => {
-    checkAuthStatus();
-  }, []);
+  // Startup auth check is intentionally disabled so the app opens to the Login screen.
+  // If you want automatic token validation, re-enable checkAuthStatus in this effect.
+  // useEffect(() => { checkAuthStatus(); }, []);
 
   const checkAuthStatus = async () => {
     try {
       const token = await getAuthToken();
       if (token) {
-        // Token exists, user is logged in
-        setCurrentScreen('home');
-        setUserType('user');
+        // Validate token by fetching profile
+        try {
+          const profile = await getUserProfile();
+          setUser({
+            id: profile.id,
+            fullName: profile.fullName,
+            email: profile.email,
+            phone: profile.phone,
+          });
+          setUserType('user');
+          setCurrentScreen('home');
+        } catch (err) {
+          console.error('Invalid or expired token, clearing:', err);
+          await clearAuthToken();
+          setCurrentScreen('connection');
+        }
       } else {
         // No token, show connection screen
         setCurrentScreen('connection');

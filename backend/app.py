@@ -32,3 +32,7 @@ def health_check():
         return JSONResponse({"status": "ok", "database": "connected"}, status_code=200)
     except Exception as e:
         return JSONResponse({"status": "error", "database": "disconnected", "error": str(e)}, status_code=503)
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run("app:app", host="0.0.0.0", port=8000, reload=True)

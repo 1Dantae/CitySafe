@@ -1,12 +1,42 @@
-from fastapi import APIRouter, UploadFile, File, Form, HTTPException, Request
+from fastapi import APIRouter, UploadFile, File, Form, HTTPException, Request, Depends
 from fastapi.responses import StreamingResponse
 from bson import ObjectId
 from typing import Optional
 import re
 import db
+from pydantic import BaseModel, Field, EmailStr, validator
+from datetime import datetime
 
 router = APIRouter()
 
+
+# Pydantic model for report data
+class ReportData(BaseModel):
+    incident_type: str = Field("other", alias="incidentType")
+    date: Optional[str] = None
+    time: Optional[str] = None
+    location: Optional[str] = None
+    description: Optional[str] = None
+    anonymous: bool = True
+    name: Optional[str] = None
+    phone: Optional[str] = None
+    email: Optional[EmailStr] = None
+    witnesses: Optional[str] = None
+    lat: Optional[float] = None
+    lng: Optional[float] = None
+    user_id: Optional[str] = Field(None, alias="userId")
+
+    @validator('lat')
+    def validate_lat(cls, v):
+        if v is not None and (v < -90 or v > 90):
+            raise ValueError('Invalid latitude')
+        return v
+
+    @validator('lng')
+    def validate_lng(cls, v):
+        if v is not None and (v < -180 or v > 180):
+            raise ValueError('Invalid longitude')
+        return v
 
 # Define allowed incident types
 ALLOWED_INCIDENT_TYPES = {
@@ -25,99 +55,39 @@ MAX_FILE_SIZE = 10 * 1024 * 1024
 
 
 @router.post("/")
-async def create_report(request: Request, media: UploadFile = File(None)):
-    # Read the multipart form and normalize keys (supports snake_case and camelCase from clients)
-    form = await request.form()
-    def get_field(*keys, default=None):
-        for k in keys:
-            if k in form and form[k] is not None:
-                return form[k]
-        return default
-
-    incident_type = get_field('incident_type', 'incidentType', default='other')
-    date = get_field('date')
-    time = get_field('time')
-    location_str = get_field('location')
-    description = get_field('description')
-    anonymous = get_field('anonymous', default='true')
-    name = get_field('name')
-    phone = get_field('phone')
-    email = get_field('email')
-    witnesses = get_field('witnesses')
-    lat = get_field('lat')
-    lng = get_field('lng')
-
-    # Normalize types
-    try:
-        anonymous = True if str(anonymous).lower() in ('true', '1', 'yes') else False
-    except Exception:
-        anonymous = True
-
-    try:
-        lat = float(lat) if lat is not None else None
-        lng = float(lng) if lng is not None else None
-    except Exception:
-        raise HTTPException(status_code=400, detail='Invalid lat/lng')
-
+async def create_report(
+    report_data: ReportData = Depends(),
+    media: UploadFile = File(None)
+):
     # Validate incident type
-    if incident_type and isinstance(incident_type, str) and incident_type.lower() not in ALLOWED_INCIDENT_TYPES:
-        # allow unknown types but normalize
-        incident_type = 'other'
-
-    # Sanitize fields
-    incident_type = str(incident_type).strip()
-    if description:
-        description = str(description).strip()
-    if location_str:
-        location_str = str(location_str).strip()
-    if name:
-        name = str(name).strip()
-    if email:
-        email = str(email).strip()
-
-    # Basic email validation
-    if email:
-        email_regex = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}'
-        if not re.match(email_regex, email):
-            raise HTTPException(status_code=400, detail='Invalid email format')
-
-    # Validate phone
-    if phone:
-        phone_clean = str(phone).replace(' ', '').replace('-', '').replace('(', '').replace(')', '').replace('.', '')
-        phone_regex = r'^[\+]?[0-9]{3,20}$'
-        if not re.match(phone_regex, phone_clean):
-            raise HTTPException(status_code=400, detail='Invalid phone number format')
-
-    # Validate coordinates ranges
-    if (lat is not None and (lat < -90 or lat > 90)) or (lng is not None and (lng < -180 or lng > 180)):
-        raise HTTPException(status_code=400, detail='Invalid coordinates')
+    if report_data.incident_type.lower() not in ALLOWED_INCIDENT_TYPES:
+        report_data.incident_type = 'other'
 
     doc = {
-        'incidentType': incident_type,
-        'date': date,
-        'time': time,
-        'description': description,
-        'anonymous': anonymous,
-        'name': name,
-        'phone': phone,
-        'email': email,
-        'witnesses': witnesses,
-        'createdAt': __import__('datetime').datetime.utcnow(),
+        'incidentType': report_data.incident_type,
+        'date': report_data.date,
+        'time': report_data.time,
+        'description': report_data.description,
+        'anonymous': report_data.anonymous,
+        'name': report_data.name,
+        'phone': report_data.phone,
+        'email': report_data.email,
+        'witnesses': report_data.witnesses,
+        'createdAt': datetime.utcnow(),
     }
     # associate with user if provided
-    user_id = get_field('user_id', 'userId')
-    if user_id:
+    if report_data.user_id:
         try:
-            doc['user_id'] = ObjectId(str(user_id))
+            doc['user_id'] = ObjectId(report_data.user_id)
         except Exception:
             # store as string if it isn't a valid ObjectId
-            doc['user_id'] = str(user_id)
+            doc['user_id'] = report_data.user_id
 
     # Store location: GeoJSON when coordinates provided, otherwise store location string
-    if lat is not None and lng is not None:
-        doc['location'] = {'type': 'Point', 'coordinates': [float(lng), float(lat)]}
-    elif location_str:
-        doc['location'] = location_str
+    if report_data.lat is not None and report_data.lng is not None:
+        doc['location'] = {'type': 'Point', 'coordinates': [report_data.lng, report_data.lat]}
+    elif report_data.location:
+        doc['location'] = report_data.location
 
     # Handle media upload
     if media:

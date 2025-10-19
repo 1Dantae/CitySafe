@@ -1294,8 +1294,6 @@ document.addEventListener('keydown', function(event) {
 
 console.log('Alert action modals loaded successfully');
 
-// ...existing code...
-
 // --------- API INTEGRATION (inject) ----------
 const API_BASE = (function() {
     // Adjust when deploying
@@ -1437,8 +1435,6 @@ async function fetchReports(skip = 0, limit = 50) {
         console.error('fetchReports error:', err);
     }
 }
-
-// ...existing code...
 
 
 

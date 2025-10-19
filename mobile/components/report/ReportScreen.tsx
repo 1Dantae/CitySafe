@@ -69,6 +69,25 @@ const ReportScreen: React.FC<ReportScreenProps> = ({ onBack }) => {
   const [cameraPermissionInformation, requestPermission] = useCameraPermissions();
   const [mediaPermissionInformation, requestMediaPermission] = useMediaLibraryPermissions();
 
+  // Handle address change with potential geocoding
+  const handleAddressChange = (text: string) => {
+    setFormData({ ...formData, location: text });
+    
+    // Clear suggestions if text is empty
+    if (text.trim() === '') {
+      setAddressSuggestions([]);
+      setShowSuggestions(false);
+      return;
+    }
+  };
+
+  // Select address from suggestions
+  const selectAddressSuggestion = (suggestion: string) => {
+    setFormData({ ...formData, location: suggestion });
+    setAddressSuggestions([]);
+    setShowSuggestions(false);
+  };
+
   async function verifyPermissions() {
     if (cameraPermissionInformation?.status === PermissionStatus.UNDETERMINED) {
       const permissionResponse = await requestPermission();
@@ -271,11 +290,12 @@ const ReportScreen: React.FC<ReportScreenProps> = ({ onBack }) => {
       } catch (err) {
         console.warn('Could not get device location', err);
       }
+      
       // Prepare report data
-      // Ensure incidentType uses customIncident if provided
+      // Ensure incidentType uses customIncident if provided and formats it correctly for backend
       const incidentTypeValue = formData.incidentType === 'Other' && customIncident
-        ? customIncident
-        : formData.incidentType;
+        ? customIncident.toLowerCase().replace(/\s+/g, '_')
+        : formData.incidentType.toLowerCase().replace(/\s+/g, '_');
 
       // Fill default date/time if not provided
       const finalDate = formData.date && formData.date.trim() !== '' ? formData.date : format(new Date(), 'MMM dd, yyyy');
@@ -295,6 +315,7 @@ const ReportScreen: React.FC<ReportScreenProps> = ({ onBack }) => {
         time: finalTime,
         location: formData.location,
         description: formData.description,
+        witnesses: formData.witnesses, // Include witnesses field
         anonymous: formData.anonymous,
         name: formData.anonymous ? undefined : formData.name,
         phone: formData.anonymous ? undefined : formData.phone,
@@ -312,7 +333,7 @@ const ReportScreen: React.FC<ReportScreenProps> = ({ onBack }) => {
       }
 
       // Get user ID if available
-      const userId = useUserProfile().user?.id;
+      const userId = user?.id;
       const result = await submitReport(reportData, userId);
 
       // fetch full report from backend and add to local context
@@ -322,7 +343,7 @@ const ReportScreen: React.FC<ReportScreenProps> = ({ onBack }) => {
         const formattedDate = full.createdAt ? new Date(full.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : (formData.date || new Date().toLocaleDateString());
         const reportObj = {
           id: full.id || result.id,
-          title: full.incidentType || reportData.incidentType,
+          title: full.incidentType || reportData.incident_type,
           description: full.description || reportData.description,
           location: full.location && typeof full.location === 'string' ? full.location : (full.location?.coordinates ? `${full.location.coordinates[1]}, ${full.location.coordinates[0]}` : formData.location),
           date: formattedDate,
@@ -490,7 +511,7 @@ const ReportScreen: React.FC<ReportScreenProps> = ({ onBack }) => {
             style={styles.fieldInput}
             placeholder="Location of Incident*"
             value={formData.location}
-            onChangeText={handleAdqdressChange}
+            onChangeText={handleAddressChange}
             placeholderTextColor={Colors.textLight}
           />
           <Ionicons name="location-outline" size={20} color={Colors.primary} />
@@ -512,7 +533,19 @@ const ReportScreen: React.FC<ReportScreenProps> = ({ onBack }) => {
           </View>
         )}
 
-
+        {/* Witnesses */}
+        <View style={styles.fieldCard}>
+          <View style={styles.iconContainer}>
+            <Ionicons name="people" size={24} color={Colors.white} />
+          </View>
+          <TextInput
+            style={styles.fieldInput}
+            placeholder="Witnesses (optional)"
+            value={formData.witnesses}
+            onChangeText={(text) => setFormData({ ...formData, witnesses: text })}
+            placeholderTextColor={Colors.textLight}
+          />
+        </View>
 
         {/* Description */}
         <View style={[styles.fieldCard, styles.descriptionCard]}>

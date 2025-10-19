@@ -9,7 +9,7 @@ import {
     View,
 } from 'react-native';
 import { Colors } from '../../constants/colors';
-import { useUserProfile } from '../../components/profile/UserProfileContext';
+// removed unused import
 
 interface SignUpScreenProps {
   onBack: () => void;
@@ -31,8 +31,8 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({ onBack, onSignUp }) => {
       return;
     }
     
-    if (password.length < 6) {
-      alert('Password must be at least 6 characters');
+    if (password.length < 8) {
+      alert('Password must be at least 8 characters');
       return;
     }
     
@@ -40,7 +40,9 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({ onBack, onSignUp }) => {
     try {
       await onSignUp({ fullName, email, phone, password });
     } catch (error) {
-      alert('Registration failed. Please try again.');
+      console.error('Registration failed:', error);
+      const message = error && (error as any).message ? (error as any).message : 'Registration failed. Please try again.';
+      alert(message.includes('HTTP error') ? 'Registration failed. Please try again.' : message);
     } finally {
       setIsLoading(false);
     }
@@ -114,7 +116,7 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({ onBack, onSignUp }) => {
               <Ionicons name="lock-closed-outline" size={20} color={Colors.primary} style={styles.inputIcon} />
               <TextInput
                 style={styles.input}
-                placeholder="Create password (min 6 chars)"
+                placeholder="Create password (min 8 chars)"
                 value={password}
                 onChangeText={setPassword}
                 secureTextEntry={!showPassword}
@@ -226,6 +228,9 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 4,
     elevation: 4,
+  },
+  createButtonDisabled: {
+    backgroundColor: Colors.gray,
   },
   createButtonText: {
     color: Colors.white,

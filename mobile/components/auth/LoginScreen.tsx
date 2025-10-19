@@ -36,7 +36,10 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
     try {
       await onLogin(email, password);
     } catch (error) {
-      alert('Login failed. Please check your credentials and try again.');
+      console.error('Login failed:', error);
+      const message = error && (error as any).message ? (error as any).message : 'Login failed. Please check your credentials and try again.';
+      // Surface a friendly message but avoid leaking sensitive internals
+      alert(message.includes('HTTP error') ? 'Login failed. Please check your credentials and try again.' : message);
     } finally {
       setIsLoading(false);
     }
@@ -200,6 +203,9 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 4,
     elevation: 4,
+  },
+  signInButtonDisabled: {
+    backgroundColor: Colors.gray,
   },
   signInButtonText: {
     color: Colors.white,
