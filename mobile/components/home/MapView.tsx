@@ -1,9 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { StyleSheet, Text, View, Dimensions } from 'react-native';
 import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { Colors } from '../../constants/colors';
+import { getReports } from '../../services/api';
 
 // Scaling function based on screen dimensions
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -32,12 +33,43 @@ const CustomMapView: React.FC<MapViewProps> = ({ userType }) => {
     longitudeDelta: 2,
   };
   
-  const [currentRegion, setCurrentRegion] = React.useState<{
-    latitude: number;
-    longitude: number;
-    latitudeDelta: number;
-    longitudeDelta: number;
-  }>(initialRegion);
+  const [currentRegion, setCurrentRegion] = React.useState(initialRegion);
+  const [userLocation, setUserLocation] = React.useState<{ latitude: number; longitude: number } | null>(null);
+  const [crimeReports, setCrimeReports] = React.useState<any[]>([]);
+
+  useEffect(() => {
+    const getLocation = async () => {
+      try {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status === 'granted') {
+          const pos = await Location.getCurrentPositionAsync({});
+          const { latitude, longitude } = pos.coords;
+          setUserLocation({ latitude, longitude });
+          setCurrentRegion(prev => ({ ...prev, latitude, longitude, latitudeDelta: 0.1, longitudeDelta: 0.1 }));
+        }
+      } catch (err) {
+        console.warn('Location permission error', err);
+      }
+    };
+    
+    const fetchReports = async () => {
+      try {
+        const reports = await getReports(0, 1000); // Fetch up to 1000 reports
+        const geoReports = reports.filter(
+          (report: any) => report.location && report.location.type === 'Point'
+        );
+        setCrimeReports(geoReports);
+      } catch (error) {
+        console.error('Failed to fetch reports for map:', error);
+      }
+    };
+
+    getLocation();
+    if (userType === 'user') {
+      fetchReports();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userType]);
   
   // Restrict map view to Jamaica boundaries
   const clampRegion = (region: {
@@ -76,29 +108,6 @@ const CustomMapView: React.FC<MapViewProps> = ({ userType }) => {
     setCurrentRegion(clamped);
   };
 
-  const [region, setRegion] = useState(defaultRegion);
-  const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
-  // Placeholder list to avoid "Cannot find name 'crimeReports'"
-  const crimeReports: { id: string; type: string; date: string }[] = [];
-
-  useEffect(() => {
-    const getLocation = async () => {
-      try {
-        const { status } = await Location.requestForegroundPermissionsAsync();
-        if (status === 'granted') {
-          const pos = await Location.getCurrentPositionAsync({});
-          const { latitude, longitude } = pos.coords;
-          setUserLocation({ latitude, longitude });
-          setRegion({ ...region, latitude, longitude });
-        }
-      } catch (err) {
-        console.warn('Location permission error', err);
-      }
-    };
-    getLocation();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
   // Show placeholder for anonymous users
   if (userType === 'anonymous') {
     return (
@@ -136,9 +145,19 @@ const CustomMapView: React.FC<MapViewProps> = ({ userType }) => {
             pinColor={'blue'}
           />
         )}
+        {crimeReports.map(report => (
+          <Marker
+            key={report._id}
+            coordinate={{
+              latitude: report.location.coordinates[1],
+              longitude: report.location.coordinates[0],
+            }}
+            title={report.incidentType}
+            description={report.description}
+            pinColor="red"
+          />
+        ))}
       </MapView>
-
-
     </View>
   );
 };

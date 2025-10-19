@@ -1,14 +1,17 @@
 import { Ionicons } from '@expo/vector-icons';
 import {
-  launchCameraAsync,
-  launchImageLibraryAsync,
-  MediaTypeOptions,
-  PermissionStatus,
   useCameraPermissions,
+  PermissionStatus,
+  launchCameraAsync,
+  MediaTypeOptions,
   useMediaLibraryPermissions,
+  launchImageLibraryAsync,
 } from 'expo-image-picker';
 import { format } from 'date-fns';
-import React, { useState } from 'react';
+import { submitReport, getReportById } from '../../services/api';
+import { useUserProfile } from '../profile/UserProfileContext';
+import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
+import React, { useEffect, useState } from 'react';
 import {
   Alert,
   Image,
@@ -23,8 +26,6 @@ import {
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Video, ResizeMode } from 'expo-av';
 import { Colors } from '../../constants/colors';
-import { useUserProfile } from '../profile/UserProfileContext';
-import { submitReport, getReportById } from '../../services/api';
 import * as Location from 'expo-location';
 
 interface ReportScreenProps {
@@ -52,7 +53,6 @@ const ReportScreen: React.FC<ReportScreenProps> = ({ onBack }) => {
     time: '',
     location: '',
     description: '',
-    witnesses: '',
     anonymous: true,
     name: user?.fullName || '', // Pre-fill with user's name if authenticated
     phone: user?.phone || '',   // Pre-fill with user's phone if authenticated
@@ -69,6 +69,32 @@ const ReportScreen: React.FC<ReportScreenProps> = ({ onBack }) => {
   const [customIncident, setCustomIncident] = useState('');
   const [cameraPermissionInformation, requestPermission] = useCameraPermissions();
   const [mediaPermissionInformation, requestMediaPermission] = useMediaLibraryPermissions();
+  const [mapRegion, setMapRegion] = useState({
+    latitude: 18.1096, // Default to Jamaica
+    longitude: -77.2975,
+    latitudeDelta: 0.0922,
+    longitudeDelta: 0.0421,
+  });
+  const [markerPosition, setMarkerPosition] = useState<{latitude: number, longitude: number} | null>(null);
+
+  useEffect(() => {
+    const getUserLocation = async () => {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status === 'granted') {
+        const location = await Location.getCurrentPositionAsync({});
+        const { latitude, longitude } = location.coords;
+        setMapRegion({
+          latitude,
+          longitude,
+          latitudeDelta: 0.01,
+          longitudeDelta: 0.01,
+        });
+        setMarkerPosition({ latitude, longitude });
+        setFormData(prev => ({ ...prev, location: `${latitude}, ${longitude}` }));
+      }
+    };
+    getUserLocation();
+  }, []);
 
   // Handle address change with potential geocoding
   const handleAddressChange = (text: string) => {
@@ -316,7 +342,6 @@ const ReportScreen: React.FC<ReportScreenProps> = ({ onBack }) => {
         time: finalTime,
         location: formData.location,
         description: formData.description,
-        witnesses: formData.witnesses, // Include witnesses field
         anonymous: formData.anonymous,
         name: formData.anonymous ? undefined : formData.name,
         phone: formData.anonymous ? undefined : formData.phone,
@@ -348,6 +373,9 @@ const ReportScreen: React.FC<ReportScreenProps> = ({ onBack }) => {
           description: full.description || reportData.description,
           location: full.location && typeof full.location === 'string' ? full.location : (full.location?.coordinates ? `${full.location.coordinates[1]}, ${full.location.coordinates[0]}` : formData.location),
           date: formattedDate,
+          time: full.time || finalTime,
+          incidentType: full.incidentType || incidentTypeValue,
+          anonymous: full.anonymous !== undefined ? full.anonymous : formData.anonymous,
           status: 'pending' as const,
         };
         addReport(reportObj);
@@ -382,6 +410,24 @@ const ReportScreen: React.FC<ReportScreenProps> = ({ onBack }) => {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.contentContainer}
       >
+        {/* Map View */}
+        <View style={styles.mapContainer}>
+          <MapView
+            provider={PROVIDER_GOOGLE}
+            style={styles.map}
+            region={mapRegion}
+            onRegionChangeComplete={setMapRegion}
+            showsUserLocation
+            showsMyLocationButton
+          >
+            {markerPosition && <Marker coordinate={markerPosition} draggable onDragEnd={(e) => {
+              const { latitude, longitude } = e.nativeEvent.coordinate;
+              setMarkerPosition({ latitude, longitude });
+              setFormData(prev => ({ ...formData, location: `${latitude}, ${longitude}` }));
+            }} />}
+          </MapView>
+        </View>
+
         {/* Incident Type */}
         <TouchableOpacity
           style={styles.fieldCard}
@@ -532,20 +578,6 @@ const ReportScreen: React.FC<ReportScreenProps> = ({ onBack }) => {
               </TouchableOpacity>
             ))}
           </View>
-        )}
-
-        {/* Witnesses */}
-        <View style={styles.fieldCard}>
-          <View style={styles.iconContainer}>
-            <Ionicons name="people" size={24} color={Colors.white} />
-          </View>
-          <TextInput
-            style={styles.fieldInput}
-            placeholder="Witnesses (optional)"
-            value={formData.witnesses}
-            onChangeText={(text) => setFormData({ ...formData, witnesses: text })}
-            placeholderTextColor={Colors.textLight}
-          />
         </View>
 
         {/* Description */}
@@ -712,6 +744,17 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: 'bold',
     color: Colors.white,
+  },
+  mapContainer: {
+    height: 250,
+    borderRadius: 16,
+    overflow: 'hidden',
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: Colors.accent,
+  },
+  map: {
+    ...StyleSheet.absoluteFillObject,
   },
   content: {
     flex: 1,

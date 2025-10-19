@@ -7,8 +7,9 @@ import {
   TouchableOpacity,
   View,
   Image,
+  Dimensions,
 } from 'react-native';
-import { Video, ResizeMode } from 'expo-av';
+import type { TextStyle, ViewStyle, ImageStyle } from 'react-native';
 import { Colors } from '../../constants/colors';
 import { useUserProfile } from './UserProfileContext';
 
@@ -30,17 +31,10 @@ const MyReportsScreen: React.FC<MyReportsScreenProps> = ({ onBack }) => {
   useEffect(() => {
     if (user?.id) fetchMyReports(user.id);
     else fetchMyReports();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
-
-  const isVideoFile = (uri: string): boolean => {
-    const videoExtensions = ['.mov', '.mp4', '.avi', '.webm', '.wmv', '.flv', '.f4v', '.f4p', '.f4a', '.f4b'];
-    return videoExtensions.some(ext => uri.toLowerCase().endsWith(ext));
-  };
 
   return (
     <View style={styles.container}>
-      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={onBack} style={styles.backButton}>
           <Ionicons name="chevron-back" size={24} color={Colors.white} />
@@ -83,9 +77,32 @@ const MyReportsScreen: React.FC<MyReportsScreenProps> = ({ onBack }) => {
       </ScrollView>
     </View>
   );
+type Styles = {
+  container: ViewStyle;
+  header: ViewStyle;
+  backButton: ViewStyle;
+  headerTitle: TextStyle;
+  headerRight: ViewStyle;
+  content: ViewStyle;
+  emptyContainer: ViewStyle;
+  emptyTitle: TextStyle;
+  emptySubtitle: TextStyle;
+  reportsList: ViewStyle;
+  reportItem: ViewStyle;
+  reportHeader: ViewStyle;
+  reportTitle: TextStyle;
+  reportStatusResolved: TextStyle;
+  reportStatusInProgress: TextStyle;
+  reportStatusPending: TextStyle;
+  reportDetails: ViewStyle;
+  detailLabel: TextStyle;
+  detailText: TextStyle;
+  reportDate: TextStyle;
+  reportDescription: TextStyle;
+  mediaPreviewContainer: ViewStyle;
 };
 
-const styles = StyleSheet.create({
+const styles = StyleSheet.create<Styles>({
   container: {
     flex: 1,
     backgroundColor: Colors.background,
@@ -206,13 +223,13 @@ const styles = StyleSheet.create({
     color: Colors.primary,
     marginBottom: scaleVertical(12),
   },
+  reportDescription: {
+    fontSize: scaleSize(16),
+    color: Colors.gray,
+    lineHeight: scaleSize(22),
+  },
   mediaPreviewContainer: {
     marginBottom: scaleVertical(12),
-  },
-  mediaPreview: {
-    width: '100%',
-    height: scaleVertical(150),
-    borderRadius: scaleSize(8),
   },
 });
 
