@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - SafeCity</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="dashboard">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h2>SafeCity</h2>
+                <p class="user-role">Admin</p>
+            </div>
+            
+            <nav class="sidebar-nav">
+                <a href="#overview" class="nav-item active" onclick="showSection('overview')">
+                    <span class="icon">📊</span>
+                    <span>Overview</span>
+                </a>
+                <a href="#reports" class="nav-item" onclick="showSection('reports')">
+                    <span class="icon">📋</span>
+                    <span>Reports</span>
+                </a>
+                <a href="#chatrooms" class="nav-item" onclick="showSection('chatrooms')">
+                    <span class="icon">💬</span>
+                    <span>Chat Monitoring</span>
+                    <span class="badge">3</span>
+                </a>
+                <a href="#users" class="nav-item" onclick="showSection('users')">
+                    <span class="icon">👥</span>
+                    <span>Users</span>
+                </a>
+                <a href="#alerts" class="nav-item" onclick="showSection('alerts')">
+                    <span class="icon">🚨</span>
+                    <span>Emergency Alerts</span>
+                    <span class="badge urgent">2</span>
+                </a>
+                <a href="#settings" class="nav-item" onclick="showSection('settings')">
+                    <span class="icon">⚙️</span>
+                    <span>Settings</span>
+                </a>
+            </nav>
+            
+            <div class="sidebar-footer">
+                <button onclick="logout()" class="btn-logout">
+                    
+                    <span>Logout</span>
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="dashboard-header">
+                <div class="header-left">
+                    <h1 id="pageTitle">Dashboard Overview</h1>
+                    <p class="breadcrumb">Home / Dashboard</p>
+                </div>
+                <div class="header-right">
+                    <div class="search-box">
+                        <input type="text" placeholder="Search...">
+                        <span class="icon">🔍</span>
+                    </div>
+                    <button class="notification-btn">
+                        🔔
+                        <span class="notification-badge">5</span>
+                    </button>
+                    <div class="user-profile">
+                        <img src="images/istockphoto-1618298821-612x612.jpg" alt="Admin">
+                        <span id="userName">Admin</span>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Overview Section -->
+            <section id="overview" class="content-section active">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon blue">📋</div>
+                        <div class="stat-info">
+                            <h3>Total Reports</h3>
+                            <p class="stat-number">147</p>
+                            <span class="stat-change positive">+12% from last month</span>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon red">📞</div>
+                        <div class="stat-info">
+                            <h3>Emergency Calls</h3>
+                            <p class="stat-number">23</p>
+                            <span class="stat-change negative">-5% from last month</span>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon green">👥</div>
+                        <div class="stat-info">
+                            <h3>Active Users</h3>
+                            <p class="stat-number">1,234</p>
+                            <span class="stat-change positive">+18% from last month</span>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon orange">⏱️</div>
+                        <div class="stat-info">
+                            <h3>Pending</h3>
+                            <p class="stat-number">12</p>
+                            <span class="stat-change neutral">No change</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="charts-grid">
+                    <div class="chart-card">
+                        <h3>Reports Overview</h3>
+                        <div class="chart-placeholder">
+                            <p>Chart: Reports by Type</p>
+                        </div>
+                    </div>
+
+                    <div class="chart-card">
+                        <h3>Activity Timeline</h3>
+                        <div class="chart-placeholder">
+                            <p>Chart: Weekly Activity</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Reports Section -->
+            <section id="reports" class="content-section">
+                <div class="section-header">
+                    <h2>Crime Reports</h2>
+                    <button class="btn btn-primary">Export Reports</button>
+                </div>
+
+                <div class="reports-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Type</th>
+                                <th>Location</th>
+                                <th>Date</th>
+                                <th>Status</th>
+                                <th>Reporter</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="reportsTableBody">
+                            <tr>
+                                <td>#001</td>
+                                <td><span class="tag red">Theft</span></td>
+                                <td>Kingston, JM</td>
+                                <td>2025-10-10</td>
+                                <td><span class="status-badge new">New</span></td>
+                                <td>Anonymous</td>
+                                <td>
+                                    <button class="btn-action">View</button>
+                                    <button class="btn-action">Resolve</button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>#002</td>
+                                <td><span class="tag orange">Vandalism</span></td>
+                                <td>Kingston, JM</td>
+                                <td>2025-10-11</td>
+                                <td><span class="status-badge pending">Pending</span></td>
+                                <td>John Doe</td>
+                                <td>
+                                    <button class="btn-action">View</button>
+                                    <button class="btn-action">Resolve</button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>#003</td>
+                                <td><span class="tag red">Assault</span></td>
+                                <td>Kingston, JM</td>
+                                <td>2025-10-12</td>
+                                <td><span class="status-badge resolved">Resolved</span></td>
+                                <td>Jane Smith</td>
+                                <td>
+                                    <button class="btn-action">View</button>
+                                    <button class="btn-action">Archive</button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Chat Monitoring Section -->
+            <section id="chatrooms" class="content-section">
+                <div class="section-header">
+                    <h2>Chat Monitoring - AI Assistant</h2>
+                    <div class="chat-filters">
+                        <button class="filter-btn active">All Chats</button>
+                        <button class="filter-btn">Active</button>
+                        <button class="filter-btn">Flagged</button>
+                        <button class="filter-btn">Escalated</button>
+                    </div>
+                </div>
+
+                <div class="chat-monitoring-grid">
+                    <!-- Chat List -->
+                    <div class="chat-list">
+                        <div class="chat-item active" onclick="selectChat(1)">
+                            <div class="chat-avatar">👤</div>
+                            <div class="chat-info">
+                                <div class="chat-header">
+                                    <h4>User #1234</h4>
+                                    <span class="chat-time">2m ago</span>
+                                </div>
+                                <p class="chat-preview">AI: How can I assist you today?</p>
+                                <div class="chat-tags">
+                                    <span class="tag green">Active</span>
+                                    <span class="tag blue">AI Handling</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="chat-item urgent" onclick="selectChat(2)">
+                            <div class="chat-avatar">🚨</div>
+                            <div class="chat-info">
+                                <div class="chat-header">
+                                    <h4>User #5678</h4>
+                                    <span class="chat-time">5m ago</span>
+                                </div>
+                                <p class="chat-preview">User: This is an emergency!</p>
+                                <div class="chat-tags">
+                                    <span class="tag red">URGENT</span>
+                                    <span class="tag orange">Escalated</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="chat-item" onclick="selectChat(3)">
+                            <div class="chat-avatar">👤</div>
+                            <div class="chat-info">
+                                <div class="chat-header">
+                                    <h4>User #9012</h4>
+                                    <span class="chat-time">15m ago</span>
+                                </div>
+                                <p class="chat-preview">AI: Thank you for reporting...</p>
+                                <div class="chat-tags">
+                                    <span class="tag gray">Resolved</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Chat Window -->
+                    <div class="chat-window">
+                        <div class="chat-window-header">
+                            <div class="chat-user-info">
+                                <h3>User #1234</h3>
+                                <p>Active now - AI Assistant responding</p>
+                            </div>
+                            <div class="chat-actions">
+                                <button class="btn-action" onclick="takeOverChat()">Take Over</button>
+                                <button class="btn-action danger" onclick="escalateChat()">Escalate</button>
+                            </div>
+                        </div>
+
+                        <div class="chat-messages" id="chatMessages">
+                            <div class="message user">
+                                <div class="message-content">
+                                    <p>Hello, I need to report suspicious activity</p>
+                                    <span class="message-time">10:30 AM</span>
+                                </div>
+                            </div>
+
+                            <div class="message ai">
+                                <div class="ai-badge">🤖</div>
+                                <div class="message-content">
+                                    <p>Hello! I'm here to help. Can you please provide more details about the suspicious activity you'd like to report?</p>
+                                    <span class="message-time">10:31 AM</span>
+                                </div>
+                            </div>
+
+                            <div class="message user">
+                                <div class="message-content">
+                                    <p>There's someone hanging around the neighborhood acting strange</p>
+                                    <span class="message-time">10:32 AM</span>
+                                </div>
+                            </div>
+
+                            <div class="message ai">
+                                <div class="ai-badge">🤖</div>
+                                <div class="message-content">
+                                    <p>Thank you for the information. Can you provide the location and any other details that might help?</p>
+                                    <span class="message-time">10:32 AM</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="chat-input-area">
+                            <input type="text" placeholder="Type a message..." id="adminMessage">
+                            <button class="btn btn-primary" onclick="sendMessage()">Send</button>
+                        </div>
+
+                        <div class="ai-status">
+                            <span class="status-indicator green"></span>
+                            AI Assistant is monitoring this conversation (24/7)
+                        </div>
+                    </div>
+
+                    <!-- Chat Details -->
+                    <div class="chat-details">
+                        <h3>Chat Details</h3>
+                        
+                        <div class="detail-section">
+                            <h4>User Information</h4>
+                            <p><strong>User ID:</strong> #1234</p>
+                            <p><strong>Status:</strong> <span class="tag green">Verified</span></p>
+                            <p><strong>Join Date:</strong> Jan 15, 2025</p>
+                        </div>
+
+                        <div class="detail-section">
+                            <h4>AI Analysis</h4>
+                            <p><strong>Sentiment:</strong> Concerned</p>
+                            <p><strong>Urgency Level:</strong> Medium</p>
+                            <p><strong>Keywords:</strong> suspicious, neighborhood</p>
+                        </div>
+
+                        <div class="detail-section">
+                            <h4>Escalation Actions</h4>
+                            <button class="btn btn-full btn-warning">Notify JDF</button>
+                            <button class="btn btn-full btn-warning">Notify JCDF</button>
+                            <button class="btn btn-full btn-danger">National Security</button>
+                            <button class="btn btn-full">Take Over Chat</button>
+                        </div>
+
+                        <div class="detail-section">
+                            <h4>Chat History</h4>
+                            <p class="small-text">Previous chats: 3</p>
+                            <p class="small-text">Total reports: 1</p>
+                            <p class="small-text">Last active: 2m ago</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Users Section -->
+            <section id="users" class="content-section">
+                <div class="section-header">
+                    <h2>User Management</h2>
+                    <button class="btn btn-primary">Add User</button>
+                </div>
+
+                <div class="users-grid">
+                    <div class="user-card">
+                        <div class="user-avatar">👤</div>
+                        <h4>John Doe</h4>
+                        <p>john@example.com</p>
+                        <span class="tag green">Active</span>
+                        <p class="small-text">Reports: 5 | Joined: Jan 2025</p>
+                    </div>
+
+                    <div class="user-card">
+                        <div class="user-avatar">👤</div>
+                        <h4>Jane Smith</h4>
+                        <p>jane@example.com</p>
+                        <span class="tag green">Active</span>
+                        <p class="small-text">Reports: 3 | Joined: Feb 2025</p>
+                    </div>
+
+                    <div class="user-card">
+                        <div class="user-avatar">👤</div>
+                        <h4>Anonymous User</h4>
+                        <p>Guest User</p>
+                        <span class="tag gray">Guest</span>
+                        <p class="small-text">Reports: 1 | Joined: Today</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Emergency Alerts Section -->
+            <section id="alerts" class="content-section">
+                <div class="section-header">
+                    <h2>Emergency Alerts</h2>
+                    <button class="btn btn-danger">Create Alert</button>
+                </div>
+
+                <div class="alerts-list">
+                    <div class="alert-card urgent">
+                        <div class="alert-header">
+                            <h3>🚨 Emergency Call - User #5678</h3>
+                            <span class="alert-time">2 minutes ago</span>
+                        </div>
+                        <p><strong>Location:</strong> Kingston Central</p>
+                        <p><strong>Type:</strong> Assault in Progress</p>
+                        <p><strong>Status:</strong> Dispatched to JDF</p>
+                        <div class="alert-actions">
+                            <button class="btn btn-danger">View Details</button>
+                            <button class="btn btn-secondary">Contact User</button>
+                        </div>
+                    </div>
+
+                    <div class="alert-card urgent">
+                        <div class="alert-header">
+                            <h3>🚨 AI Escalation - Chat #9012</h3>
+                            <span class="alert-time">10 minutes ago</span>
+                        </div>
+                        <p><strong>Reason:</strong> Threatening Language Detected</p>
+                        <p><strong>AI Confidence:</strong> High (95%)</p>
+                        <p><strong>Status:</strong> Awaiting Review</p>
+                        <div class="alert-actions">
+                            <button class="btn btn-primary">Review Chat</button>
+                            <button class="btn btn-danger">Escalate</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Settings Section -->
+            <section id="settings" class="content-section">
+                <h2>Settings</h2>
+                
+                <div class="settings-grid">
+                    <div class="settings-card">
+                        <h3>AI Configuration</h3>
+                        <div class="form-group">
+                            <label>Auto-Escalation Threshold</label>
+                            <select>
+                                <option>High Priority Keywords Only</option>
+                                <option selected>Medium Priority and Above</option>
+                                <option>All Flagged Conversations</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" checked>
+                                Enable 24/7 AI Monitoring
+                            </label>
+                        </div>
+                        <button class="btn btn-primary">Save Changes</button>
+                    </div>
+
+                    <div class="settings-card">
+                        <h3>Notification Settings</h3>
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" checked>
+                                Email notifications
+                            </label>
+                        </div>
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" checked>
+                                SMS alerts for emergencies
+                            </label>
+                        </div>
+                        <button class="btn btn-primary">Save Changes</button>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
