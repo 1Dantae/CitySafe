@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
 from bson import ObjectId
-from .. import db
+import db
 
 router = APIRouter()
 

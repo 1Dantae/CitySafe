@@ -1,5 +1,4 @@
-- fastapi
-- uvicorn[standard]
-- pymongo
-- python-multipart
-- gridfs
+fastapi
+uvicorn[standard]
+pymongo
+python-multipart

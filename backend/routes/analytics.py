@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from .. import db
+import db
 from bson.son import SON
 
 router = APIRouter()

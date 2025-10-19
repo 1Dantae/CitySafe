@@ -24,6 +24,7 @@ import {
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Colors } from '../../constants/colors';
 import { useUserProfile } from '../profile/UserProfileContext';
+import { submitReport } from '../../services/api';
 
 interface ReportScreenProps {
   onBack: () => void;
@@ -219,6 +220,25 @@ const ReportScreen: React.FC<ReportScreenProps> = ({ onBack }) => {
     }
   };
 
+  // Helper function to determine media type based on file extension
+  const getMediaType = (uri: string): string => {
+    const extension = uri.split('.').pop()?.toLowerCase();
+    if (!extension) return 'image';
+
+    // Common image extensions
+    if (['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp'].includes(extension)) {
+      return `image/${extension}`;
+    }
+    
+    // Common video extensions
+    if (['mp4', 'mov', 'avi', 'wmv', 'flv', 'webm'].includes(extension)) {
+      return `video/${extension}`;
+    }
+    
+    // Default to image if unknown
+    return 'image';
+  };
+
   const handleTimeChange = (event: any, selectedTime?: Date) => {
     setShowTimePicker(false);
     if (selectedTime) {
@@ -236,39 +256,71 @@ const ReportScreen: React.FC<ReportScreenProps> = ({ onBack }) => {
     }
   };
 
-  const handleSubmit = () => {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmit = async () => {
+    if (isSubmitting) return; // Prevent multiple submissions
+    
     if (!formData.incidentType || !formData.location || !formData.description) {
       Alert.alert('Error', 'Please fill in all required fields');
       return;
     }
 
-    // Create a report object to add to the user's profile
-    const reportDate = formData.date ? new Date(formData.date.split('/').reverse().join('/')) : new Date();
-    const formattedDate = reportDate.toLocaleDateString('en-US', { 
-      year: 'numeric', 
-      month: 'short', 
-      day: 'numeric' 
-    });
-    
-    const reportTitle = formData.incidentType === 'Other' && customIncident 
-      ? customIncident 
-      : formData.incidentType;
-    
-    const newReport = {
-      id: Date.now().toString(), // In a real app, this would be from the backend
-      title: reportTitle,
-      description: formData.description,
-      location: formData.location,
-      date: formattedDate,
-      status: 'pending' as const,
-    };
+    setIsSubmitting(true);
 
-    // Add the report to the user's profile
-    addReport(newReport);
+    try {
+      // Prepare report data
+      const reportData = {
+        incidentType: formData.incidentType === 'Other' && customIncident 
+          ? customIncident 
+          : formData.incidentType,
+        date: formData.date,
+        time: formData.time,
+        location: formData.location,
+        description: formData.description,
+        anonymous: formData.anonymous,
+        name: formData.anonymous ? undefined : formData.name,
+        phone: formData.anonymous ? undefined : formData.phone,
+        email: formData.anonymous ? undefined : formData.email,
+        media: pickedImage ? { 
+          uri: pickedImage, 
+          name: pickedImage.split('/').pop() || 'media', 
+          type: getMediaType(pickedImage) 
+        } : undefined,
+      };
 
-    Alert.alert('Success', 'Report submitted successfully!', [
-      { text: 'OK', onPress: onBack },
-    ]);
+      // Submit report to backend
+      const result = await submitReport(reportData);
+
+      // Create a report object to add to the user's profile
+      const reportDate = formData.date ? new Date(formData.date.split('/').reverse().join('/')) : new Date();
+      const formattedDate = reportDate.toLocaleDateString('en-US', { 
+        year: 'numeric', 
+        month: 'short', 
+        day: 'numeric' 
+      });
+      
+      const newReport = {
+        id: result.id, // Use the ID from the backend
+        title: reportData.incidentType,
+        description: formData.description,
+        location: formData.location,
+        date: formattedDate,
+        status: 'pending' as const,
+      };
+
+      // Add the report to the user's profile
+      addReport(newReport);
+
+      Alert.alert('Success', 'Report submitted successfully!', [
+        { text: 'OK', onPress: onBack },
+      ]);
+    } catch (error: any) {
+      console.error('Error submitting report:', error);
+      Alert.alert('Error', `Failed to submit report: ${error.message || 'Unknown error'}`);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -553,9 +605,22 @@ const ReportScreen: React.FC<ReportScreenProps> = ({ onBack }) => {
         )}
 
         {/* Submit Button */}
-        <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
-          <Ionicons name="send" size={24} color={Colors.white} />
-          <Text style={styles.submitButtonText}>Submit Report</Text>
+        <TouchableOpacity 
+          style={[styles.submitButton, isSubmitting && styles.submitButtonDisabled]} 
+          onPress={handleSubmit}
+          disabled={isSubmitting}
+        >
+          {isSubmitting ? (
+            <>
+              <Ionicons name="hourglass" size={24} color={Colors.white} />
+              <Text style={styles.submitButtonText}>Submitting...</Text>
+            </>
+          ) : (
+            <>
+              <Ionicons name="send" size={24} color={Colors.white} />
+              <Text style={styles.submitButtonText}>Submit Report</Text>
+            </>
+          )}
         </TouchableOpacity>
       </ScrollView>
     </View>
@@ -672,6 +737,9 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     marginLeft: 12,
+  },
+  submitButtonDisabled: {
+    backgroundColor: Colors.gray,
   },
   suggestionsContainer: {
     backgroundColor: Colors.white,

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { SafeAreaView, StatusBar, StyleSheet } from 'react-native';
 import AdminDashboard from '../components/admin/adminDashboard';
 import LoginScreen from '../components/auth/LoginScreen';
@@ -8,10 +8,11 @@ import HomeScreen from '../components/home/HomeScreen';
 import ReportScreen from '../components/report/ReportScreen';
 import ProfileScreen from '../components/profile/ProfileScreen';
 import MyReportsScreen from '../components/profile/MyReportsScreen';
+import ConnectionCheckScreen from '../components/connection/ConnectionCheckScreen';
 import { Colors } from '../constants/colors';
 import { UserProfileProvider, useUserProfile } from '../components/profile/UserProfileContext';
 
-type Screen = 'welcome' | 'login' | 'signup' | 'home' | 'report' | 'profile' | 'myReports' | 'admin';
+type Screen = 'connection' | 'welcome' | 'login' | 'signup' | 'home' | 'report' | 'profile' | 'myReports' | 'admin';
 type UserType = 'anonymous' | 'user' | 'admin' | null;
 
 // Mock function to simulate user data initialization after login
@@ -58,7 +59,7 @@ const initializeReportData = () => {
 
 // Separate component to handle user profile logic
 const AppContent = () => {
-  const [currentScreen, setCurrentScreen] = useState<Screen>('welcome');
+  const [currentScreen, setCurrentScreen] = useState<Screen>('connection');
   const [userType, setUserType] = useState<UserType>(null);
   const { setUser, addReport } = useUserProfile();
 
@@ -148,6 +149,9 @@ const AppContent = () => {
 
   const renderScreen = () => {
     switch (currentScreen) {
+      case 'connection':
+        return <ConnectionCheckScreen setCurrentScreen={(screen) => setCurrentScreen(screen as Screen)} />;
+      
       case 'welcome':
         return (
           <WelcomeScreen
