@@ -46,7 +46,6 @@
             
             <div class="sidebar-footer">
                 <button onclick="logout()" class="btn-logout">
-                    
                     <span>Logout</span>
                 </button>
             </div>
@@ -350,9 +349,8 @@
             <section id="users" class="content-section">
                 <div class="section-header">
                     <h2>User Management</h2>
-                    <button class="btn btn-primary">Add User</button>
+                    <button class="btn btn-primary" onclick="openAddUserModal()">Add User</button>
                 </div>
-
                 <div class="users-grid">
                     <div class="user-card">
                         <div class="user-avatar">👤</div>
@@ -361,7 +359,6 @@
                         <span class="tag green">Active</span>
                         <p class="small-text">Reports: 5 | Joined: Jan 2025</p>
                     </div>
-
                     <div class="user-card">
                         <div class="user-avatar">👤</div>
                         <h4>Jane Smith</h4>
@@ -369,7 +366,6 @@
                         <span class="tag green">Active</span>
                         <p class="small-text">Reports: 3 | Joined: Feb 2025</p>
                     </div>
-
                     <div class="user-card">
                         <div class="user-avatar">👤</div>
                         <h4>Anonymous User</h4>
@@ -463,6 +459,107 @@
         </main>
     </div>
 
+    <!-- Add User Modal -->
+    <div id="addUserModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Add New User</h3>
+                <button class="close-btn" onclick="closeAddUserModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="info-text">
+                    Create login credentials for system administrators or law enforcement personnel.
+                </div>
+
+                <form id="addUserForm" onsubmit="handleAddUser(event)">
+                    <!-- Role Selection -->
+                    <div class="role-select">
+                        <label>Select User Role *</label>
+                        <div class="role-options">
+                            <div class="role-option">
+                                <input type="radio" id="roleAdmin" name="role" value="admin" checked>
+                                <label for="roleAdmin" class="role-label">System Admin</label>
+                            </div>
+                            <div class="role-option">
+                                <input type="radio" id="roleLawEnforcement" name="role" value="law_enforcement">
+                                <label for="roleLawEnforcement" class="role-label">Law Enforcement</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Personal Information -->
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="firstName">First Name *</label>
+                            <input type="text" id="firstName" required placeholder="Enter first name">
+                        </div>
+                        <div class="form-group">
+                            <label for="lastName">Last Name *</label>
+                            <input type="text" id="lastName" required placeholder="Enter last name">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="email">Email Address *</label>
+                        <input type="email" id="email" required placeholder="user@example.com">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="badgeId">Badge ID / Employee ID</label>
+                        <input type="text" id="badgeId" placeholder="Optional for law enforcement">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="department">Department</label>
+                        <select id="department">
+                            <option value="">Select Department</option>
+                            <option value="administration">Administration</option>
+                            <option value="patrol">Patrol Division</option>
+                            <option value="investigations">Investigations</option>
+                            <option value="cybercrime">Cybercrime Unit</option>
+                            <option value="community">Community Relations</option>
+                        </select>
+                    </div>
+
+                    <!-- Login Credentials -->
+                    <div class="form-group">
+                        <label for="username">Username *</label>
+                        <input type="text" id="username" required placeholder="Create username">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="password">Password *</label>
+                        <input type="password" id="password" required placeholder="Create secure password" oninput="checkPasswordStrength()">
+                        <div class="password-strength">
+                            <div id="passwordStrengthBar" class="password-strength-bar"></div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="confirmPassword">Confirm Password *</label>
+                        <input type="password" id="confirmPassword" required placeholder="Re-enter password">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="accessLevel">Access Level *</label>
+                        <select id="accessLevel" required>
+                            <option value="">Select Access Level</option>
+                            <option value="full">Full Access</option>
+                            <option value="standard">Standard Access</option>
+                            <option value="limited">Limited Access</option>
+                            <option value="view_only">View Only</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeAddUserModal()">Cancel</button>
+                <button class="btn btn-success" onclick="document.getElementById('addUserForm').requestSubmit()">Create User</button>
+            </div>
+        </div>
+    </div>
+
+    
     <script src="script.js"></script>
 </body>
 </html>
