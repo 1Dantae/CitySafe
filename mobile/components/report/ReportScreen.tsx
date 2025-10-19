@@ -7,12 +7,10 @@ import {
   useCameraPermissions,
   useMediaLibraryPermissions,
 } from 'expo-image-picker';
-import { format } from 'date-fns';
 import React, { useState } from 'react';
 import {
   Alert,
   Image,
-  Platform,
   ScrollView,
   StyleSheet,
   Switch,
@@ -20,10 +18,21 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  Dimensions,
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { Video, ResizeMode } from 'expo-av';
 import { Colors } from '../../constants/colors';
 import { useUserProfile } from '../profile/UserProfileContext';
+import { NotificationService } from '../../services/NotificationService';
+
+// Scaling function based on screen dimensions
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+const scale = SCREEN_WIDTH / 375; // 375 is the base width for iPhone
+const verticalScale = SCREEN_HEIGHT / 812; // 812 is the base height for iPhone X
+
+const scaleSize = (size: number) => Math.ceil(size * scale);
+const scaleVertical = (size: number) => Math.ceil(size * verticalScale);
 
 interface ReportScreenProps {
   onBack: () => void;
@@ -59,7 +68,6 @@ const ReportScreen: React.FC<ReportScreenProps> = ({ onBack }) => {
 
   const [showTypePicker, setShowTypePicker] = useState(false);
   const [pickedImage, setPickedImage] = useState<string | null>(null);
-  const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [addressSuggestions, setAddressSuggestions] = useState<string[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -67,6 +75,11 @@ const ReportScreen: React.FC<ReportScreenProps> = ({ onBack }) => {
   const [customIncident, setCustomIncident] = useState('');
   const [cameraPermissionInformation, requestPermission] = useCameraPermissions();
   const [mediaPermissionInformation, requestMediaPermission] = useMediaLibraryPermissions();
+
+  const isVideoFile = (uri: string): boolean => {
+    const videoExtensions = ['.mov', '.mp4', '.avi', '.webm', '.wmv', '.flv', '.f4v', '.f4p', '.f4a', '.f4b'];
+    return videoExtensions.some(ext => uri.toLowerCase().endsWith(ext));
+  };
 
   async function verifyPermissions() {
     if (cameraPermissionInformation?.status === PermissionStatus.UNDETERMINED) {
@@ -184,14 +197,6 @@ const ReportScreen: React.FC<ReportScreenProps> = ({ onBack }) => {
     setShowSuggestions(false);
   };
 
-  const handleDateChange = (event: any, selectedDate?: Date) => {
-    setShowDatePicker(false);
-    if (selectedDate) {
-      const formattedDate = format(selectedDate, 'MMM dd, yyyy'); // e.g., "Oct 18, 2025"
-      setFormData({ ...formData, date: formattedDate });
-    }
-  };
-
   const parseTimeToDateTime = (timeString: string): Date => {
     if (!timeString) return new Date();
     
@@ -243,7 +248,7 @@ const ReportScreen: React.FC<ReportScreenProps> = ({ onBack }) => {
     }
 
     // Create a report object to add to the user's profile
-    const reportDate = formData.date ? new Date(formData.date.split('/').reverse().join('/')) : new Date();
+    const reportDate = formData.date ? new Date(formData.date) : new Date();
     const formattedDate = reportDate.toLocaleDateString('en-US', { 
       year: 'numeric', 
       month: 'short', 
@@ -255,16 +260,35 @@ const ReportScreen: React.FC<ReportScreenProps> = ({ onBack }) => {
       : formData.incidentType;
     
     const newReport = {
-      id: Date.now().toString(), // In a real app, this would be from the backend
+      id: Date.now().toString(), // In a real app, this was from the backend
       title: reportTitle,
       description: formData.description,
       location: formData.location,
       date: formattedDate,
+      time: formData.time,
+      incidentType: formData.incidentType,
+      witnesses: formData.witnesses,
+      anonymous: formData.anonymous,
+      name: formData.anonymous ? undefined : formData.name,
+      phone: formData.anonymous ? undefined : formData.phone,
+      email: formData.anonymous ? undefined : formData.email,
+      mediaUri: pickedImage,
       status: 'pending' as const,
     };
 
     // Add the report to the user's profile
     addReport(newReport);
+
+    // Generate a notification for the new incident report
+    NotificationService.generateIncidentReportNotification(newReport.title, newReport.location)
+      .then(notification => {
+        if (notification) {
+          console.log('Notification created for incident report:', notification.title);
+        }
+      })
+      .catch(error => {
+        console.error('Error creating notification for incident report:', error);
+      });
 
     Alert.alert('Success', 'Report submitted successfully!', [
       { text: 'OK', onPress: onBack },
@@ -344,36 +368,19 @@ const ReportScreen: React.FC<ReportScreenProps> = ({ onBack }) => {
         )}
 
         {/* Date */}
-        <TouchableOpacity
-          style={styles.fieldCard}
-          onPress={() => setShowDatePicker(true)}
-        >
+        <View style={styles.fieldCard}>
           <View style={styles.iconContainer}>
             <Ionicons name="calendar" size={24} color={Colors.white} />
           </View>
-          <Text style={styles.fieldText}>
-            {formData.date || 'Date of Incident*'}
-          </Text>
+          <TextInput
+            style={styles.fieldInput}
+            placeholder="Date of Incident (e.g., Oct 18, 2025)*"
+            value={formData.date}
+            onChangeText={(text) => setFormData({ ...formData, date: text })}
+            placeholderTextColor={Colors.textLight}
+          />
           <Ionicons name="calendar-outline" size={20} color={Colors.primary} />
-        </TouchableOpacity>
-
-        {/* Date Picker Modal */}
-        {showDatePicker && (
-          <View style={styles.pickerModal}>
-            <View style={styles.pickerHeader}>
-              <Text style={styles.pickerHeaderTitle}>Select Date</Text>
-              <TouchableOpacity onPress={() => setShowDatePicker(false)}>
-                <Ionicons name="close" size={24} color={Colors.primary} />
-              </TouchableOpacity>
-            </View>
-            <DateTimePicker
-              value={formData.date ? new Date(Date.parse(formData.date)) : new Date()}
-              mode="date"
-              display="default"
-              onChange={handleDateChange}
-            />
-          </View>
-        )}
+        </View>
 
         {/* Time */}
         <TouchableOpacity
@@ -479,7 +486,17 @@ const ReportScreen: React.FC<ReportScreenProps> = ({ onBack }) => {
 
         {pickedImage && (
           <View style={styles.imagePreviewContainer}>
-            <Image source={{ uri: pickedImage }} style={styles.imagePreview} />
+            {isVideoFile(pickedImage) ? (
+              <Video
+                source={{ uri: pickedImage }}
+                style={styles.imagePreview}
+                useNativeControls
+                resizeMode={ResizeMode.CONTAIN}
+                isLooping={false}
+              />
+            ) : (
+              <Image source={{ uri: pickedImage }} style={styles.imagePreview} />
+            )}
             <TouchableOpacity 
               style={styles.removeImageButton}
               onPress={() => setPickedImage(null)}
@@ -569,17 +586,17 @@ const styles = StyleSheet.create({
   },
   header: {
     backgroundColor: Colors.primary,
-    paddingTop: 60,
-    paddingBottom: 24,
-    paddingHorizontal: 24,
+    paddingTop: scaleVertical(60),
+    paddingBottom: scaleVertical(24),
+    paddingHorizontal: scaleSize(24),
     flexDirection: 'row',
     alignItems: 'center',
   },
   backButton: {
-    marginRight: 16,
+    marginRight: scaleSize(16),
   },
   headerTitle: {
-    fontSize: 28,
+    fontSize: scaleSize(28),
     fontWeight: 'bold',
     color: Colors.white,
   },
@@ -587,70 +604,70 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   contentContainer: {
-    paddingHorizontal: 24,
-    paddingVertical: 24,
-    paddingBottom: 40,
+    paddingHorizontal: scaleSize(24),
+    paddingVertical: scaleVertical(24),
+    paddingBottom: scaleVertical(40),
   },
   fieldCard: {
     backgroundColor: Colors.white,
-    borderRadius: 16,
-    padding: 16,
+    borderRadius: scaleSize(16),
+    padding: scaleSize(16),
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: scaleVertical(16),
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: scaleVertical(2) },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
+    shadowRadius: scaleSize(4),
     elevation: 2,
   },
   descriptionCard: {
     alignItems: 'flex-start',
   },
   iconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 12,
+    width: scaleSize(48),
+    height: scaleSize(48),
+    borderRadius: scaleSize(12),
     backgroundColor: Colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 16,
+    marginRight: scaleSize(16),
   },
   fieldText: {
     flex: 1,
-    fontSize: 16,
+    fontSize: scaleSize(16),
     color: Colors.primary,
     fontWeight: '500',
   },
   fieldInput: {
     flex: 1,
-    fontSize: 16,
+    fontSize: scaleSize(16),
     color: Colors.primary,
     fontWeight: '500',
   },
   descriptionInput: {
-    minHeight: 100,
-    paddingTop: 12,
+    minHeight: scaleVertical(100),
+    paddingTop: scaleVertical(12),
   },
   pickerContainer: {
     backgroundColor: Colors.white,
-    borderRadius: 16,
-    marginBottom: 16,
+    borderRadius: scaleSize(16),
+    marginBottom: scaleVertical(16),
     overflow: 'hidden',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: scaleVertical(2) },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
+    shadowRadius: scaleSize(4),
     elevation: 2,
   },
   pickerItem: {
-    paddingVertical: 16,
-    paddingHorizontal: 24,
+    paddingVertical: scaleVertical(16),
+    paddingHorizontal: scaleSize(24),
     borderBottomWidth: 1,
     borderBottomColor: Colors.background,
   },
   pickerItemText: {
-    fontSize: 16,
+    fontSize: scaleSize(16),
     color: Colors.primary,
   },
   submitButton: {
@@ -658,55 +675,55 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 20,
-    borderRadius: 30,
-    marginTop: 8,
+    paddingVertical: scaleVertical(20),
+    borderRadius: scaleSize(30),
+    marginTop: scaleVertical(8),
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: { width: 0, height: scaleVertical(4) },
     shadowOpacity: 0.3,
-    shadowRadius: 8,
+    shadowRadius: scaleSize(8),
     elevation: 8,
   },
   submitButtonText: {
     color: Colors.white,
-    fontSize: 18,
+    fontSize: scaleSize(18),
     fontWeight: 'bold',
-    marginLeft: 12,
+    marginLeft: scaleSize(12),
   },
   suggestionsContainer: {
     backgroundColor: Colors.white,
-    borderRadius: 8,
-    maxHeight: 150,
-    marginBottom: 16,
+    borderRadius: scaleSize(8),
+    maxHeight: scaleVertical(150),
+    marginBottom: scaleVertical(16),
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: scaleVertical(2) },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
+    shadowRadius: scaleSize(4),
     elevation: 2,
     zIndex: 10,
   },
   suggestionItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 12,
+    padding: scaleSize(12),
     borderBottomWidth: 1,
     borderBottomColor: Colors.background,
   },
   suggestionIcon: {
-    marginRight: 12,
+    marginRight: scaleSize(12),
   },
   suggestionText: {
-    fontSize: 16,
+    fontSize: scaleSize(16),
     color: Colors.primary,
   },
   pickerModal: {
     backgroundColor: Colors.white,
-    borderRadius: 16,
-    marginBottom: 16,
+    borderRadius: scaleSize(16),
+    marginBottom: scaleVertical(16),
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: scaleVertical(2) },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
+    shadowRadius: scaleSize(4),
     elevation: 2,
     overflow: 'hidden',
   },
@@ -714,11 +731,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 16,
+    padding: scaleSize(16),
     backgroundColor: Colors.primary,
   },
   pickerHeaderTitle: {
-    fontSize: 18,
+    fontSize: scaleSize(18),
     fontWeight: 'bold',
     color: Colors.white,
   },
@@ -729,35 +746,35 @@ const styles = StyleSheet.create({
   photoButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    marginVertical: 4,
+    paddingVertical: scaleVertical(8),
+    paddingHorizontal: scaleSize(12),
+    marginVertical: scaleVertical(4),
     backgroundColor: Colors.accent,
-    borderRadius: 20,
-    marginRight: 8,
+    borderRadius: scaleSize(20),
+    marginRight: scaleSize(8),
   },
   photoButtonText: {
     color: Colors.primary,
-    fontSize: 14,
+    fontSize: scaleSize(14),
     fontWeight: '500',
-    marginLeft: 8,
+    marginLeft: scaleSize(8),
   },
   imagePreviewContainer: {
     position: 'relative',
-    marginBottom: 16,
+    marginBottom: scaleVertical(16),
   },
   imagePreview: {
     width: '100%',
-    height: 200,
-    borderRadius: 12,
+    height: scaleVertical(200),
+    borderRadius: scaleSize(12),
   },
   removeImageButton: {
     position: 'absolute',
-    top: 8,
-    right: 8,
+    top: scaleSize(8),
+    right: scaleSize(8),
     backgroundColor: Colors.white,
-    borderRadius: 12,
-    padding: 4,
+    borderRadius: scaleSize(12),
+    padding: scaleSize(4),
   },
 });
 

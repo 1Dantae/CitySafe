@@ -6,9 +6,20 @@ import {
   Text,
   TouchableOpacity,
   View,
+  Image,
+  Dimensions,
 } from 'react-native';
+import { Video, ResizeMode } from 'expo-av';
 import { Colors } from '../../constants/colors';
 import { useUserProfile } from './UserProfileContext';
+
+// Scaling function based on screen dimensions
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+const scale = SCREEN_WIDTH / 375; // 375 is the base width for iPhone
+const verticalScale = SCREEN_HEIGHT / 812; // 812 is the base height for iPhone X
+
+const scaleSize = (size: number) => Math.ceil(size * scale);
+const scaleVertical = (size: number) => Math.ceil(size * verticalScale);
 
 interface MyReportsScreenProps {
   onBack: () => void;
@@ -16,6 +27,11 @@ interface MyReportsScreenProps {
 
 const MyReportsScreen: React.FC<MyReportsScreenProps> = ({ onBack }) => {
   const { reports } = useUserProfile();
+
+  const isVideoFile = (uri: string): boolean => {
+    const videoExtensions = ['.mov', '.mp4', '.avi', '.webm', '.wmv', '.flv', '.f4v', '.f4p', '.f4a', '.f4b'];
+    return videoExtensions.some(ext => uri.toLowerCase().endsWith(ext));
+  };
 
   return (
     <View style={styles.container}>
@@ -49,8 +65,62 @@ const MyReportsScreen: React.FC<MyReportsScreenProps> = ({ onBack }) => {
                     <Text style={styles.reportStatusPending}>Pending</Text>
                   )}
                 </View>
-                <Text style={styles.reportDate}>{report.date}</Text>
-                <Text style={styles.reportDescription}>{report.description}</Text>
+                <Text style={styles.reportDate}>{report.date} at {report.time || 'N/A'}</Text>
+                <View style={styles.reportDetails}>
+                  <Text style={styles.detailLabel}>Time:</Text>
+                  <Text style={styles.detailText}>{report.time || 'N/A'}</Text>
+                </View>
+                <View style={styles.reportDetails}>
+                  <Text style={styles.detailLabel}>Location:</Text>
+                  <Text style={styles.detailText}>{report.location}</Text>
+                </View>
+                <View style={styles.reportDetails}>
+                  <Text style={styles.detailLabel}>Type:</Text>
+                  <Text style={styles.detailText}>{report.incidentType}</Text>
+                </View>
+                <View style={styles.reportDetails}>
+                  <Text style={styles.detailLabel}>Witnesses:</Text>
+                  <Text style={styles.detailText}>{report.witnesses || 'N/A'}</Text>
+                </View>
+                <View style={styles.reportDetails}>
+                  <Text style={styles.detailLabel}>Anonymous:</Text>
+                  <Text style={styles.detailText}>{report.anonymous ? 'Yes' : 'No'}</Text>
+                </View>
+                {!report.anonymous && (
+                  <>
+                    <View style={styles.reportDetails}>
+                      <Text style={styles.detailLabel}>Name:</Text>
+                      <Text style={styles.detailText}>{report.name || 'N/A'}</Text>
+                    </View>
+                    <View style={styles.reportDetails}>
+                      <Text style={styles.detailLabel}>Phone:</Text>
+                      <Text style={styles.detailText}>{report.phone || 'N/A'}</Text>
+                    </View>
+                    <View style={styles.reportDetails}>
+                      <Text style={styles.detailLabel}>Email:</Text>
+                      <Text style={styles.detailText}>{report.email || 'N/A'}</Text>
+                    </View>
+                  </>
+                )}
+                {report.mediaUri && (
+                  <View style={styles.mediaPreviewContainer}>
+                    {isVideoFile(report.mediaUri) ? (
+                      <Video
+                        source={{ uri: report.mediaUri }}
+                        style={styles.mediaPreview}
+                        useNativeControls
+                        resizeMode={ResizeMode.CONTAIN}
+                        isLooping={false}
+                      />
+                    ) : (
+                      <Image source={{ uri: report.mediaUri }} style={styles.mediaPreview} />
+                    )}
+                  </View>
+                )}
+                <View style={styles.reportDetails}>
+                  <Text style={styles.detailLabel}>Description:</Text>
+                  <Text style={styles.detailText}>{report.description}</Text>
+                </View>
               </TouchableOpacity>
             ))}
           </View>
@@ -67,109 +137,127 @@ const styles = StyleSheet.create({
   },
   header: {
     backgroundColor: Colors.primary,
-    paddingTop: 60,
-    paddingBottom: 24,
-    paddingHorizontal: 24,
+    paddingTop: scaleVertical(60),
+    paddingBottom: scaleVertical(24),
+    paddingHorizontal: scaleSize(24),
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
   backButton: {
-    padding: 4,
+    padding: scaleSize(4),
   },
   headerTitle: {
-    fontSize: 20,
+    fontSize: scaleSize(20),
     fontWeight: 'bold',
     color: Colors.white,
   },
   headerRight: {
-    width: 24, // Spacer for alignment
+    width: scaleSize(24), // Spacer for alignment
   },
   content: {
     flex: 1,
-    paddingHorizontal: 24,
-    paddingTop: 24,
+    paddingHorizontal: scaleSize(24),
+    paddingTop: scaleVertical(24),
   },
   emptyContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingTop: 60,
+    paddingTop: scaleVertical(60),
   },
   emptyTitle: {
-    fontSize: 20,
+    fontSize: scaleSize(20),
     fontWeight: 'bold',
     color: Colors.primary,
-    marginTop: 16,
-    marginBottom: 8,
+    marginTop: scaleVertical(16),
+    marginBottom: scaleVertical(8),
   },
   emptySubtitle: {
-    fontSize: 16,
+    fontSize: scaleSize(16),
     color: Colors.gray,
     textAlign: 'center',
-    paddingHorizontal: 24,
+    paddingHorizontal: scaleSize(24),
   },
   reportsList: {
-    marginBottom: 24,
+    marginBottom: scaleVertical(24),
   },
   reportItem: {
     backgroundColor: Colors.white,
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 16,
+    borderRadius: scaleSize(16),
+    padding: scaleSize(20),
+    marginBottom: scaleVertical(16),
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: scaleVertical(2) },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
+    shadowRadius: scaleSize(4),
     elevation: 4,
   },
   reportHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: scaleVertical(12),
   },
   reportTitle: {
-    fontSize: 18,
+    fontSize: scaleSize(18),
     fontWeight: 'bold',
     color: Colors.primary,
     flex: 0.7,
   },
   reportStatusResolved: {
-    fontSize: 14,
+    fontSize: scaleSize(14),
     color: '#22c55e',
     fontWeight: '600',
     backgroundColor: '#dcfce7',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
+    paddingHorizontal: scaleSize(8),
+    paddingVertical: scaleVertical(4),
+    borderRadius: scaleSize(12),
   },
   reportStatusInProgress: {
-    fontSize: 14,
+    fontSize: scaleSize(14),
     color: '#3b82f6',
     fontWeight: '600',
     backgroundColor: '#dbeafe',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
+    paddingHorizontal: scaleSize(8),
+    paddingVertical: scaleVertical(4),
+    borderRadius: scaleSize(12),
   },
   reportStatusPending: {
-    fontSize: 14,
+    fontSize: scaleSize(14),
     color: '#f59e0b',
     fontWeight: '600',
     backgroundColor: '#fef3c7',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
+    paddingHorizontal: scaleSize(8),
+    paddingVertical: scaleVertical(4),
+    borderRadius: scaleSize(12),
+  },
+  reportDetails: {
+    flexDirection: 'row',
+    marginBottom: scaleVertical(8),
+  },
+  detailLabel: {
+    fontWeight: 'bold',
+    color: Colors.primary,
+    minWidth: scaleSize(80),
+  },
+  detailText: {
+    flex: 1,
+    color: Colors.gray,
   },
   reportDate: {
-    fontSize: 14,
-    color: Colors.gray,
-    marginBottom: 8,
+    fontSize: scaleSize(16),
+    fontWeight: '600',
+    color: Colors.primary,
+    marginBottom: scaleVertical(12),
   },
-  reportDescription: {
-    fontSize: 14,
-    color: Colors.gray,
+  mediaPreviewContainer: {
+    marginBottom: scaleVertical(12),
+  },
+  mediaPreview: {
+    width: '100%',
+    height: scaleVertical(150),
+    borderRadius: scaleSize(8),
   },
 });
 

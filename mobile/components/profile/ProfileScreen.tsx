@@ -7,9 +7,18 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  Dimensions,
 } from 'react-native';
 import { Colors } from '../../constants/colors';
 import { useUserProfile } from './UserProfileContext';
+
+// Scaling function based on screen dimensions
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+const scale = SCREEN_WIDTH / 375; // 375 is the base width for iPhone
+const verticalScale = SCREEN_HEIGHT / 812; // 812 is the base height for iPhone X
+
+const scaleSize = (size: number) => Math.ceil(size * scale);
+const scaleVertical = (size: number) => Math.ceil(size * verticalScale);
 
 interface ProfileScreenProps {
   onBack: () => void;
@@ -256,44 +265,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ onBack }) => {
           )}
         </View>
 
-        {/* Report History Section */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Report History</Text>
-            <TouchableOpacity>
-              <Ionicons name="chevron-forward" size={20} color={Colors.primary} />
-            </TouchableOpacity>
-          </View>
-          
-          <View style={styles.reportsList}>
-            <TouchableOpacity style={styles.reportItem}>
-              <View style={styles.reportHeader}>
-                <Text style={styles.reportTitle}>Street Light Outage</Text>
-                <Text style={styles.reportStatus}>Resolved</Text>
-              </View>
-              <Text style={styles.reportDate}>Oct 10, 2025</Text>
-              <Text style={styles.reportDescription}>The street light at the corner of Main St & 5th Ave is not working.</Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity style={styles.reportItem}>
-              <View style={styles.reportHeader}>
-                <Text style={styles.reportTitle}>Pothole on Road</Text>
-                <Text style={styles.reportStatus}>In Progress</Text>
-              </View>
-              <Text style={styles.reportDate}>Oct 5, 2025</Text>
-              <Text style={styles.reportDescription}>Large pothole on Highway 101 causing traffic hazards.</Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity style={styles.reportItem}>
-              <View style={styles.reportHeader}>
-                <Text style={styles.reportTitle}>Graffiti Vandalism</Text>
-                <Text style={styles.reportStatusPending}>Pending</Text>
-              </View>
-              <Text style={styles.reportDate}>Sep 28, 2025</Text>
-              <Text style={styles.reportDescription}>Graffiti found on the community wall at Central Park.</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
+
       </ScrollView>
     </View>
   );
@@ -306,147 +278,147 @@ const styles = StyleSheet.create({
   },
   header: {
     backgroundColor: Colors.primary,
-    paddingTop: 60,
-    paddingBottom: 24,
-    paddingHorizontal: 24,
+    paddingTop: scaleVertical(60),
+    paddingBottom: scaleVertical(24),
+    paddingHorizontal: scaleSize(24),
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
   backButton: {
-    padding: 4,
+    padding: scaleSize(4),
   },
   headerTitle: {
-    fontSize: 20,
+    fontSize: scaleSize(20),
     fontWeight: 'bold',
     color: Colors.white,
   },
   headerRight: {
-    width: 24, // Spacer for alignment
+    width: scaleSize(24), // Spacer for alignment
   },
   content: {
     flex: 1,
-    paddingHorizontal: 24,
-    paddingTop: 24,
+    paddingHorizontal: scaleSize(24),
+    paddingTop: scaleVertical(24),
   },
   profileCard: {
     backgroundColor: Colors.white,
-    borderRadius: 16,
-    padding: 24,
+    borderRadius: scaleSize(16),
+    padding: scaleSize(24),
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: scaleVertical(24),
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: scaleVertical(2) },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
+    shadowRadius: scaleSize(4),
     elevation: 4,
   },
   profileHeader: {
     alignItems: 'center',
   },
   avatar: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
+    width: scaleSize(100),
+    height: scaleSize(100),
+    borderRadius: scaleSize(50),
     backgroundColor: Colors.accent,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: scaleVertical(16),
   },
   profileName: {
-    fontSize: 24,
+    fontSize: scaleSize(24),
     fontWeight: 'bold',
     color: Colors.primary,
-    marginBottom: 8,
+    marginBottom: scaleVertical(8),
   },
   profileEmail: {
-    fontSize: 16,
+    fontSize: scaleSize(16),
     color: Colors.gray,
   },
   section: {
     backgroundColor: Colors.white,
-    borderRadius: 16,
-    padding: 24,
-    marginBottom: 24,
+    borderRadius: scaleSize(16),
+    padding: scaleSize(24),
+    marginBottom: scaleVertical(24),
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: scaleVertical(2) },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
+    shadowRadius: scaleSize(4),
     elevation: 4,
   },
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: scaleVertical(16),
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: scaleSize(18),
     fontWeight: 'bold',
     color: Colors.primary,
   },
   editForm: {
-    marginBottom: 16,
+    marginBottom: scaleVertical(16),
   },
   inputGroup: {
-    marginBottom: 16,
+    marginBottom: scaleVertical(16),
   },
   label: {
-    fontSize: 14,
+    fontSize: scaleSize(14),
     fontWeight: '500',
     color: Colors.primary,
-    marginBottom: 8,
+    marginBottom: scaleVertical(8),
   },
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 2,
     borderColor: Colors.accent,
-    borderRadius: 30,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    borderRadius: scaleSize(30),
+    paddingHorizontal: scaleSize(16),
+    paddingVertical: scaleVertical(12),
   },
   inputIcon: {
-    marginRight: 12,
+    marginRight: scaleSize(12),
   },
   input: {
     flex: 1,
-    fontSize: 16,
+    fontSize: scaleSize(16),
     color: Colors.primary,
   },
   saveButton: {
     backgroundColor: Colors.primary,
-    paddingVertical: 16,
-    borderRadius: 30,
+    paddingVertical: scaleVertical(16),
+    borderRadius: scaleSize(30),
     alignItems: 'center',
-    marginTop: 8,
+    marginTop: scaleVertical(8),
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: scaleVertical(2) },
     shadowOpacity: 0.2,
-    shadowRadius: 4,
+    shadowRadius: scaleSize(4),
     elevation: 4,
   },
   saveButtonText: {
     color: Colors.white,
-    fontSize: 18,
+    fontSize: scaleSize(18),
     fontWeight: '600',
   },
   infoList: {
-    marginBottom: 16,
+    marginBottom: scaleVertical(16),
   },
   infoItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingVertical: 12,
+    paddingVertical: scaleVertical(12),
     borderBottomWidth: 1,
     borderBottomColor: Colors.gray,
   },
   infoLabel: {
-    fontSize: 16,
+    fontSize: scaleSize(16),
     color: Colors.gray,
   },
   infoValue: {
-    fontSize: 16,
+    fontSize: scaleSize(16),
     color: Colors.primary,
     fontWeight: '500',
     textAlign: 'right',
@@ -454,77 +426,31 @@ const styles = StyleSheet.create({
   },
   changePasswordButton: {
     backgroundColor: Colors.accent,
-    paddingVertical: 16,
-    borderRadius: 30,
+    paddingVertical: scaleVertical(16),
+    borderRadius: scaleSize(30),
     alignItems: 'center',
-    marginTop: 8,
+    marginTop: scaleVertical(8),
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: scaleVertical(2) },
     shadowOpacity: 0.2,
-    shadowRadius: 4,
+    shadowRadius: scaleSize(4),
     elevation: 4,
   },
   changePasswordButtonText: {
     color: Colors.primary,
-    fontSize: 18,
+    fontSize: scaleSize(18),
     fontWeight: '600',
   },
-  reportsList: {
-    marginBottom: 16,
-  },
-  reportItem: {
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.gray,
-  },
-  reportHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 4,
-  },
-  reportTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: Colors.primary,
-    flex: 0.7,
-  },
-  reportStatus: {
-    fontSize: 14,
-    color: '#22c55e',
-    fontWeight: '600',
-    backgroundColor: '#dcfce7',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  reportStatusPending: {
-    fontSize: 14,
-    color: '#f59e0b',
-    fontWeight: '600',
-    backgroundColor: '#fef3c7',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  reportDate: {
-    fontSize: 14,
-    color: Colors.gray,
-    marginBottom: 8,
-  },
-  reportDescription: {
-    fontSize: 14,
-    color: Colors.gray,
-  },
+
   passwordPlaceholder: {
-    paddingVertical: 12,
-    paddingHorizontal: 16,
+    paddingVertical: scaleVertical(12),
+    paddingHorizontal: scaleSize(16),
     backgroundColor: Colors.accent,
-    borderRadius: 8,
+    borderRadius: scaleSize(8),
     alignItems: 'center',
   },
   passwordPlaceholderText: {
-    fontSize: 16,
+    fontSize: scaleSize(16),
     color: Colors.primary,
     fontWeight: '500',
   },

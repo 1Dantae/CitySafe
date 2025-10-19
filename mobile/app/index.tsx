@@ -8,10 +8,13 @@ import HomeScreen from '../components/home/HomeScreen';
 import ReportScreen from '../components/report/ReportScreen';
 import ProfileScreen from '../components/profile/ProfileScreen';
 import MyReportsScreen from '../components/profile/MyReportsScreen';
+import ChatScreen from '../components/chat/ChatScreen';
+import NotificationScreen from '../components/notifications/NotificationScreen';
 import { Colors } from '../constants/colors';
 import { UserProfileProvider, useUserProfile } from '../components/profile/UserProfileContext';
+import { NotificationProvider } from '../components/notifications/NotificationContext';
 
-type Screen = 'welcome' | 'login' | 'signup' | 'home' | 'report' | 'profile' | 'myReports' | 'admin';
+type Screen = 'welcome' | 'login' | 'signup' | 'home' | 'report' | 'profile' | 'myReports' | 'chat' | 'admin' | 'notifications';
 type UserType = 'anonymous' | 'user' | 'admin' | null;
 
 // Mock function to simulate user data initialization after login
@@ -35,6 +38,13 @@ const initializeReportData = () => {
       description: 'The street light at the corner of Main St & 5th Ave is not working.',
       location: 'Main St & 5th Ave',
       date: 'Oct 10, 2025',
+      time: '08:30 AM',
+      incidentType: 'Vandalism',
+      witnesses: '2 people witnessed the outage',
+      anonymous: false,
+      name: 'John Doe',
+      phone: '876-555-0123',
+      email: 'john.doe@example.com',
       status: 'resolved' as const,
     },
     {
@@ -43,6 +53,10 @@ const initializeReportData = () => {
       description: 'Large pothole on Highway 101 causing traffic hazards.',
       location: 'Highway 101',
       date: 'Oct 5, 2025',
+      time: '14:45 PM',
+      incidentType: 'Infrastructure',
+      witnesses: 'Many drivers reported the issue',
+      anonymous: true,
       status: 'in-progress' as const,
     },
     {
@@ -51,6 +65,13 @@ const initializeReportData = () => {
       description: 'Graffiti found on the community wall at Central Park.',
       location: 'Central Park',
       date: 'Sep 28, 2025',
+      time: '19:20 PM',
+      incidentType: 'Vandalism',
+      witnesses: 'Security camera footage available',
+      anonymous: false,
+      name: 'Jane Smith',
+      phone: '876-555-0456',
+      email: 'jane.smith@example.com',
       status: 'pending' as const,
     },
   ];
@@ -146,6 +167,14 @@ const AppContent = () => {
     setCurrentScreen('home');
   };
 
+  const handleChat = () => {
+    setCurrentScreen('chat');
+  };
+
+  const handleNotifications = () => {
+    setCurrentScreen('notifications');
+  };
+
   const renderScreen = () => {
     switch (currentScreen) {
       case 'welcome':
@@ -182,6 +211,8 @@ const AppContent = () => {
             onLogout={handleLogout}
             onProfile={handleProfile}
             onMyReports={handleMyReports}
+            onChat={handleChat}
+            onNotifications={handleNotifications}
           />
         );
       
@@ -193,6 +224,12 @@ const AppContent = () => {
       
       case 'myReports':
         return <MyReportsScreen onBack={handleBackToMyReports} />;
+      
+      case 'chat':
+        return <ChatScreen onBack={handleBackToHome} />;
+      
+      case 'notifications':
+        return <NotificationScreen onBack={handleBackToHome} />;
       
       /*case 'admin':
         return <AdminDashboard onLogout={handleLogout} />;
@@ -218,9 +255,11 @@ const AppContent = () => {
 
 export default function App() {
   return (
-    <UserProfileProvider>
-      <AppContent />
-    </UserProfileProvider>
+    <NotificationProvider>
+      <UserProfileProvider>
+        <AppContent />
+      </UserProfileProvider>
+    </NotificationProvider>
   );
 }
 
