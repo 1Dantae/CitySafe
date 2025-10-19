@@ -16,6 +16,125 @@
                     <div class="badge-icon">🛡️</div>
                     <h2>Law Enforcement Login</h2>
                     <p>Jamaica Defence Force & Constabulary Force Portal</p>
+                    <div class="test-credentials">
+                        <p><strong>Test Accounts:</strong></p>
+                        <p>JDF: jdf@safecity.com / DefaultJDF123</p>
+                        <p>JCF: jcf@safecity.com / DefaultJCF123</p>
+                        <p>National Security: security@safecity.com / DefaultNS123</p>
+                    </div>
+                </div>
+
+                <form id="lawEnforcementLoginForm" class="auth-form">
+                    <div class="form-group">
+                        <label for="email">Official Email</label>
+                        <input type="email" id="email" name="email" required placeholder="officer@jdf.gov.jm">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="password">Password</label>
+                        <div class="password-input">
+                            <input type="password" id="password" name="password" required placeholder="Enter password">
+                            <button type="button" class="toggle-password" onclick="togglePassword()">
+                                
+                            </button>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-full">Secure Login</button>
+
+                    <div class="form-footer">
+                        <a href="#" class="link">Forgot Credentials?</a>
+                        <span class="divider">|</span>
+                        <a href="#" class="link">Request Access</a>
+                    </div>
+                </form>
+
+                <div class="security-notice">
+                    <p> This is a secure government portal. Unauthorized access is prohibited.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Test accounts
+        const testAccounts = [
+            { email: 'jdf@safecity.com', password: 'DefaultJDF123', role: 'law-enforcement', department: 'JDF', firstLogin: true },
+            { email: 'jcf@safecity.com', password: 'DefaultJCF123', role: 'law-enforcement', department: 'JCF', firstLogin: true },
+            { email: 'security@safecity.com', password: 'DefaultNS123', role: 'law-enforcement', department: 'National Security', firstLogin: true }
+        ];
+
+        function togglePassword() {
+            const passwordInput = document.getElementById('password');
+            const eyeIcon = document.getElementById('eyeIcon');
+            
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+               
+            } else {
+                passwordInput.type = 'password';
+               
+            }
+        }
+
+        document.getElementById('lawEnforcementLoginForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            
+            // Find matching account
+            const account = testAccounts.find(acc => acc.email === email && acc.password === password);
+            
+            if (account) {
+                // Store user data
+                localStorage.setItem('userType', account.role);
+                localStorage.setItem('userEmail', email);
+                localStorage.setItem('userDepartment', account.department);
+                localStorage.setItem('badgeNumber', account.department + '-12345');
+                localStorage.setItem('department', account.department);
+                
+                // Check if first login
+                if (account.firstLogin) {
+                    // Mark that password change is required
+                    localStorage.setItem('requiresPasswordChange', 'true');
+                    
+                    // Redirect to password change page
+                    window.location.href = 'change-password.html';
+                } else {
+                    // Redirect to law enforcement dashboard
+                    window.location.href = 'law-enforcement-dashboard.html';
+                }
+            } else {
+                alert('Invalid email or password');
+            }
+        });
+    </script>
+</body>
+</html><!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Law Enforcement Login - SafeCity</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="auth-page law-enforcement">
+        <a href="index.html" class="back-btn">← Back to Home</a>
+        
+        <div class="auth-container">
+            <div class="auth-card">
+                <div class="auth-header">
+                    <div class="badge-icon">🛡️</div>
+                    <h2>Law Enforcement Login</h2>
+                    <p>Jamaica Defence Force & Constabulary Force Portal</p>
+                    <div class="test-credentials">
+                        <p><strong>Test Accounts:</strong></p>
+                        <p>JDF: jdf@safecity.com / DefaultJDF123</p>
+                        <p>JCF: jcf@safecity.com / DefaultJCF123</p>
+                        <p>National Security: security@safecity.com / DefaultNS123</p>
+                    </div>
                 </div>
 
                 <form id="lawEnforcementLoginForm" class="auth-form">
@@ -72,10 +191,10 @@
             
             if (passwordInput.type === 'password') {
                 passwordInput.type = 'text';
-                eyeIcon.textContent = '🙈';
+                
             } else {
                 passwordInput.type = 'password';
-                eyeIcon.textContent = '👁️';
+                
             }
         }
 
