@@ -679,6 +679,281 @@ window.addEventListener('DOMContentLoaded', function() {
 });
 
 console.log('SafeCity Script Loaded Successfully');
+// ===================================
+// CREATE ALERT MODAL FUNCTIONALITY
+// ===================================
+
+/**
+ * Opens the Create Alert modal
+ */
+function openCreateAlertModal() {
+    console.log('openCreateAlertModal called');
+    const modal = document.getElementById('createAlertModal');
+    if (modal) {
+        modal.classList.add('active');
+        document.body.style.overflow = 'hidden';
+        console.log('Create Alert Modal opened successfully');
+    } else {
+        console.error('ERROR: Create Alert Modal element not found!');
+    }
+}
+
+/**
+ * Closes the Create Alert modal and resets the form
+ */
+function closeCreateAlertModal() {
+    console.log('closeCreateAlertModal called');
+    const modal = document.getElementById('createAlertModal');
+    if (modal) {
+        modal.classList.remove('active');
+    }
+    document.body.style.overflow = 'auto';
+    
+    // Reset form
+    const form = document.getElementById('createAlertForm');
+    if (form) {
+        form.reset();
+    }
+}
+
+/**
+ * Handles form submission for creating alert
+ * @param {Event} event - Form submit event
+ */
+function handleCreateAlert(event) {
+    event.preventDefault();
+    console.log('handleCreateAlert called');
+    
+    // Get selected agencies
+    const agencyCheckboxes = document.querySelectorAll('input[name="agencies"]:checked');
+    const selectedAgencies = Array.from(agencyCheckboxes).map(cb => cb.value);
+    
+    // Validate at least one agency is selected
+    if (selectedAgencies.length === 0) {
+        alert('Please select at least one agency to notify.');
+        return;
+    }
+    
+    // Collect form data
+    const alertData = {
+        priority: document.querySelector('input[name="priority"]:checked').value,
+        title: document.getElementById('alertTitle').value,
+        type: document.getElementById('alertType').value,
+        location: document.getElementById('alertLocation').value,
+        parish: document.getElementById('alertParish').value,
+        description: document.getElementById('alertDescription').value,
+        suspectDescription: document.getElementById('suspectDescription').value,
+        vehicleInfo: document.getElementById('vehicleInfo').value,
+        agencies: selectedAgencies,
+        sendSMS: document.getElementById('sendSMS').checked,
+        publicAlert: document.getElementById('publicAlert').checked,
+        timestamp: new Date().toISOString(),
+        createdBy: localStorage.getItem('userEmail') || 'admin@safecity.com',
+        status: 'Active',
+        alertId: 'ALT-' + Date.now()
+    };
+    
+    // Log the data (in production, send to backend)
+    console.log('New Alert Data:', alertData);
+    
+    // TODO: Send data to backend API
+    // Example:
+    // fetch('/api/alerts/create', {
+    //     method: 'POST',
+    //     headers: { 'Content-Type': 'application/json' },
+    //     body: JSON.stringify(alertData)
+    // })
+    // .then(response => response.json())
+    // .then(data => {
+    //     addAlertToList(alertData);
+    //     closeCreateAlertModal();
+    //     showAlertNotification(alertData);
+    // })
+    // .catch(error => {
+    //     alert('Failed to create alert. Please try again.');
+    // });
+    
+    // Format priority for display
+    const priorityText = alertData.priority.charAt(0).toUpperCase() + alertData.priority.slice(1);
+    const priorityEmoji = {
+        'critical': '🚨',
+        'high': '⚠️',
+        'medium': '⚡'
+    }[alertData.priority];
+    
+    // Show success message with summary
+    const agenciesList = selectedAgencies.map(a => `- ${a}`).join('\n');
+    alert(`${priorityEmoji} ALERT CREATED SUCCESSFULLY!\n\nPriority: ${priorityText}\nTitle: ${alertData.title}\nLocation: ${alertData.location}, ${getParishName(alertData.parish)}\n\nNotifying:\n${agenciesList}\n\nAlert ID: ${alertData.alertId}`);
+    
+    // Add alert to the list immediately
+    addAlertToList(alertData);
+    
+    // Show notification banner
+    showAlertNotification(alertData);
+    
+    // Close modal
+    closeCreateAlertModal();
+}
+
+/**
+ * Adds a new alert card to the alerts list
+ * @param {Object} alertData - Alert data object
+ */
+function addAlertToList(alertData) {
+    const alertsList = document.querySelector('.alerts-list');
+    
+    if (!alertsList) {
+        console.error('Alerts list not found');
+        return;
+    }
+    
+    // Create alert card element
+    const alertCard = document.createElement('div');
+    alertCard.className = 'alert-card urgent';
+    
+    // Get time ago
+    const timeAgo = 'Just now';
+    
+    // Get priority icon
+    const priorityIcon = {
+        'critical': '🚨',
+        'high': '⚠️',
+        'medium': '⚡'
+    }[alertData.priority] || '🚨';
+    
+    // Format type for display
+    const typeDisplay = alertData.type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+    
+    alertCard.innerHTML = `
+        <div class="alert-header">
+            <h3>${priorityIcon} ${alertData.title}</h3>
+            <span class="alert-time">${timeAgo}</span>
+        </div>
+        <p><strong>Location:</strong> ${alertData.location}, ${getParishName(alertData.parish)}</p>
+        <p><strong>Type:</strong> ${typeDisplay}</p>
+        <p><strong>Status:</strong> Notifying ${alertData.agencies.join(', ')}</p>
+        ${alertData.suspectDescription ? `<p><strong>Suspect:</strong> ${alertData.suspectDescription}</p>` : ''}
+        ${alertData.vehicleInfo ? `<p><strong>Vehicle:</strong> ${alertData.vehicleInfo}</p>` : ''}
+        <div class="alert-actions">
+            <button class="btn btn-danger" onclick="viewAlertDetails('${alertData.alertId}')">View Details</button>
+            <button class="btn btn-secondary" onclick="updateAlertStatus('${alertData.alertId}')">Update Status</button>
+        </div>
+    `;
+    
+    // Add to top of list
+    alertsList.insertBefore(alertCard, alertsList.firstChild);
+    console.log('Alert card added to list');
+}
+
+/**
+ * Shows a notification banner for the new alert
+ * @param {Object} alertData - Alert data object
+ */
+function showAlertNotification(alertData) {
+    // Find the alerts section
+    const alertsSection = document.getElementById('alerts');
+    if (!alertsSection) return;
+    
+    // Create notification banner
+    const banner = document.createElement('div');
+    banner.className = 'alert-banner urgent';
+    banner.innerHTML = `
+        <div class="alert-icon">🚨</div>
+        <div>
+            <strong>ALERT BROADCAST SUCCESSFUL</strong><br>
+            <span style="font-size: 0.9rem;">Emergency alert sent to ${alertData.agencies.length} agencies</span>
+        </div>
+    `;
+    
+    // Insert at top of section
+    const sectionHeader = alertsSection.querySelector('.section-header');
+    if (sectionHeader) {
+        sectionHeader.insertAdjacentElement('afterend', banner);
+        
+        // Auto-remove after 10 seconds
+        setTimeout(() => {
+            banner.style.opacity = '0';
+            setTimeout(() => banner.remove(), 300);
+        }, 10000);
+    }
+}
+
+/**
+ * Helper function to get parish display name
+ * @param {string} parishValue - Parish value from form
+ * @returns {string} Display name
+ */
+function getParishName(parishValue) {
+    const parishNames = {
+        'kingston': 'Kingston',
+        'st_andrew': 'St. Andrew',
+        'st_thomas': 'St. Thomas',
+        'portland': 'Portland',
+        'st_mary': 'St. Mary',
+        'st_ann': 'St. Ann',
+        'trelawny': 'Trelawny',
+        'st_james': 'St. James',
+        'hanover': 'Hanover',
+        'westmoreland': 'Westmoreland',
+        'st_elizabeth': 'St. Elizabeth',
+        'manchester': 'Manchester',
+        'clarendon': 'Clarendon',
+        'st_catherine': 'St. Catherine'
+    };
+    return parishNames[parishValue] || parishValue;
+}
+
+/**
+ * View alert details (placeholder function)
+ * @param {string} alertId - Alert ID
+ */
+function viewAlertDetails(alertId) {
+    alert(`Viewing details for Alert: ${alertId}\n\nThis would open a detailed view of the alert.`);
+    console.log('View alert details:', alertId);
+}
+
+/**
+ * Update alert status (placeholder function)
+ * @param {string} alertId - Alert ID
+ */
+function updateAlertStatus(alertId) {
+    const newStatus = prompt('Enter new status:\n- Active\n- Dispatched\n- Resolved\n- Cancelled');
+    if (newStatus) {
+        alert(`Alert ${alertId} status updated to: ${newStatus}`);
+        console.log('Update alert status:', alertId, newStatus);
+    }
+}
+
+// Update the window.onclick to handle both modals
+const originalWindowClick = window.onclick;
+window.onclick = function(event) {
+    const addUserModal = document.getElementById('addUserModal');
+    const createAlertModal = document.getElementById('createAlertModal');
+    
+    if (event.target === addUserModal) {
+        closeAddUserModal();
+    }
+    if (event.target === createAlertModal) {
+        closeCreateAlertModal();
+    }
+}
+
+// Update the keydown listener to handle both modals
+document.addEventListener('keydown', function(event) {
+    if (event.key === 'Escape') {
+        const addUserModal = document.getElementById('addUserModal');
+        const createAlertModal = document.getElementById('createAlertModal');
+        
+        if (addUserModal && addUserModal.classList.contains('active')) {
+            closeAddUserModal();
+        }
+        if (createAlertModal && createAlertModal.classList.contains('active')) {
+            closeCreateAlertModal();
+        }
+    }
+});
+
+console.log('Create Alert Modal functions loaded');
 
 
 

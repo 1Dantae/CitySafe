@@ -1625,3 +1625,229 @@ tbody tr:hover {
         flex-direction: column;
     }
 }
+/* ==================== CREATE ALERT MODAL STYLES ==================== */
+
+/* Alert Type/Priority Selection */
+.alert-type-select {
+    background: var(--background);
+    padding: 1.5rem;
+    border-radius: 15px;
+    margin-bottom: 2rem;
+}
+
+.alert-type-select label {
+    display: block;
+    color: var(--primary);
+    font-weight: 600;
+    margin-bottom: 1rem;
+    font-size: 0.95rem;
+}
+
+.priority-options {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+}
+
+.priority-option {
+    position: relative;
+}
+
+.priority-option input[type="radio"] {
+    display: none;
+}
+
+.priority-label {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 1.25rem 0.75rem;
+    background: var(--white);
+    border: 2px solid var(--gray);
+    border-radius: 12px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-weight: 600;
+    color: var(--text-light);
+}
+
+.priority-icon {
+    font-size: 2rem;
+}
+
+.priority-option input[type="radio"]:checked + .priority-label.critical {
+    background: var(--emergency);
+    color: var(--white);
+    border-color: var(--emergency);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(220, 38, 38, 0.3);
+}
+
+.priority-option input[type="radio"]:checked + .priority-label.high {
+    background: var(--warning);
+    color: var(--white);
+    border-color: var(--warning);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(245, 158, 11, 0.3);
+}
+
+.priority-option input[type="radio"]:checked + .priority-label.medium {
+    background: #3b82f6;
+    color: var(--white);
+    border-color: #3b82f6;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(59, 130, 246, 0.3);
+}
+
+.priority-label:hover {
+    border-color: var(--primary);
+    transform: translateY(-2px);
+}
+
+/* Textarea Styling */
+.modal-body textarea {
+    width: 100%;
+    padding: 0.875rem 1.125rem;
+    border: 2px solid var(--gray);
+    border-radius: 12px;
+    font-size: 0.95rem;
+    font-family: inherit;
+    resize: vertical;
+    transition: all 0.3s ease;
+}
+
+.modal-body textarea:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(30, 58, 95, 0.1);
+}
+
+/* Notify Agencies Section */
+.notify-agencies {
+    background: linear-gradient(135deg, rgba(232, 213, 196, 0.2) 0%, rgba(232, 213, 196, 0.4) 100%);
+    padding: 1.5rem;
+    border-radius: 12px;
+    margin-bottom: 1.5rem;
+    border: 2px solid var(--accent);
+}
+
+.notify-agencies > label {
+    display: block;
+    color: var(--primary);
+    font-weight: 600;
+    margin-bottom: 1rem;
+    font-size: 0.95rem;
+}
+
+.agency-checkboxes {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+}
+
+.agency-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    background: var(--white);
+    border: 2px solid var(--gray);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.agency-checkbox:hover {
+    border-color: var(--primary);
+    background: rgba(30, 58, 95, 0.05);
+}
+
+.agency-checkbox input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+    accent-color: var(--primary);
+}
+
+.agency-checkbox input[type="checkbox"]:checked {
+    accent-color: var(--emergency);
+}
+
+.agency-name {
+    font-size: 0.9rem;
+    color: var(--text);
+    font-weight: 500;
+}
+
+.agency-checkbox:has(input:checked) {
+    border-color: var(--emergency);
+    background: rgba(220, 38, 38, 0.05);
+}
+
+.agency-checkbox:has(input:checked) .agency-name {
+    color: var(--emergency);
+    font-weight: 600;
+}
+
+/* Modal Body Checkbox Labels */
+.modal-body .checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    background: var(--background);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-bottom: 0;
+}
+
+.modal-body .checkbox-label:hover {
+    background: rgba(30, 58, 95, 0.05);
+}
+
+.modal-body .checkbox-label input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+    accent-color: var(--primary);
+}
+
+/* Danger Button Styling */
+.btn-danger {
+    background: var(--emergency);
+    color: var(--white);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    justify-content: center;
+}
+
+.btn-danger:hover {
+    background: var(--emergency-dark);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
+}
+
+/* Responsive Adjustments for Alert Modal */
+@media (max-width: 768px) {
+    .priority-options {
+        grid-template-columns: 1fr;
+    }
+
+    .agency-checkboxes {
+        grid-template-columns: 1fr;
+    }
+
+    .priority-label {
+        flex-direction: row;
+        justify-content: center;
+        padding: 1rem;
+    }
+
+    .priority-icon {
+        font-size: 1.5rem;
+    }
+}
