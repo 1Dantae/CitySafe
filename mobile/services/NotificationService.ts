@@ -1,18 +1,9 @@
-import { Notification, NotificationSettings } from '../components/notifications/NotificationModel';
+import { Notification } from '../components/notifications/NotificationModel';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const NOTIFICATIONS_KEY = '@citysafe_notifications';
-const SETTINGS_KEY = '@citysafe_notification_settings';
 
 export class NotificationService {
-  // Default notification settings
-  private static defaultSettings: NotificationSettings = {
-    enableSafetyAlerts: true,
-    enableIncidentReports: true,
-    enableLocationBased: true,
-    notificationSound: true,
-    vibration: true,
-  };
 
   // Create a new notification
   static async createNotification(notification: Omit<Notification, 'id' | 'timestamp' | 'read'>): Promise<Notification> {
@@ -93,37 +84,10 @@ export class NotificationService {
     await AsyncStorage.setItem(NOTIFICATIONS_KEY, JSON.stringify([]));
   }
 
-  // Get notification settings
-  static async getSettings(): Promise<NotificationSettings> {
-    try {
-      const stored = await AsyncStorage.getItem(SETTINGS_KEY);
-      if (stored) {
-        return JSON.parse(stored);
-      }
-      return this.defaultSettings;
-    } catch (error) {
-      console.error('Error getting notification settings:', error);
-      return this.defaultSettings;
-    }
-  }
 
-  // Update notification settings
-  static async updateSettings(settings: Partial<NotificationSettings>): Promise<NotificationSettings> {
-    const currentSettings = await this.getSettings();
-    const updatedSettings = { ...currentSettings, ...settings };
-    
-    await AsyncStorage.setItem(SETTINGS_KEY, JSON.stringify(updatedSettings));
-    return updatedSettings;
-  }
 
   // Generate location-based safety notifications
-  static async generateLocationBasedNotification(location: string, incidentType?: string): Promise<Notification | null> {
-    const settings = await this.getSettings();
-    
-    if (!settings.enableLocationBased) {
-      return null;
-    }
-
+  static async generateLocationBasedNotification(location: string, incidentType?: string): Promise<Notification> {
     let title, message, type;
     
     if (incidentType) {
@@ -147,21 +111,6 @@ export class NotificationService {
 
   // Generate safety alerts
   static async generateSafetyAlert(message: string, priority: 'low' | 'medium' | 'high' = 'medium'): Promise<Notification> {
-    const settings = await this.getSettings();
-    
-    if (!settings.enableSafetyAlerts) {
-      // Return a notification object without saving if disabled
-      return {
-        id: Date.now().toString(),
-        title: 'Safety Alert',
-        message,
-        type: 'alert',
-        timestamp: new Date(),
-        read: false,
-        priority,
-      };
-    }
-
     return this.createNotification({
       title: 'Safety Alert',
       message,
@@ -171,13 +120,7 @@ export class NotificationService {
   }
 
   // Generate incident report notifications
-  static async generateIncidentReportNotification(reportTitle: string, location: string): Promise<Notification | null> {
-    const settings = await this.getSettings();
-    
-    if (!settings.enableIncidentReports) {
-      return null;
-    }
-
+  static async generateIncidentReportNotification(reportTitle: string, location: string): Promise<Notification> {
     return this.createNotification({
       title: 'New Incident Report',
       message: `A new incident report titled "${reportTitle}" has been filed for ${location}.`,

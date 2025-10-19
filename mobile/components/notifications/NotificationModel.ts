@@ -8,11 +8,3 @@ export interface Notification {
   location?: string;  // Optional location for location-based notifications
   priority: 'low' | 'medium' | 'high';
 }
-
-export interface NotificationSettings {
-  enableSafetyAlerts: boolean;
-  enableIncidentReports: boolean;
-  enableLocationBased: boolean;
-  notificationSound: boolean;
-  vibration: boolean;
-}

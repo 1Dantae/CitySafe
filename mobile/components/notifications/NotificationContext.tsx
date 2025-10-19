@@ -1,11 +1,10 @@
 import React, { createContext, useContext, useReducer, useEffect } from 'react';
-import { Notification, NotificationSettings } from '../components/notifications/NotificationModel';
-import { NotificationService } from '../services/NotificationService';
+import { Notification } from '../components/notifications/NotificationModel';
+import { NotificationService } from '../../services/NotificationService';
 
 interface NotificationState {
   notifications: Notification[];
   unreadCount: number;
-  settings: NotificationSettings;
   loading: boolean;
 }
 
@@ -15,20 +14,12 @@ interface NotificationContextType extends NotificationState {
   markAllAsRead: () => Promise<void>;
   deleteNotification: (id: string) => Promise<void>;
   clearAllNotifications: () => Promise<void>;
-  updateSettings: (settings: Partial<NotificationSettings>) => Promise<void>;
   refreshNotifications: () => Promise<void>;
 }
 
 const initialState: NotificationState = {
   notifications: [],
   unreadCount: 0,
-  settings: {
-    enableSafetyAlerts: true,
-    enableIncidentReports: true,
-    enableLocationBased: true,
-    notificationSound: true,
-    vibration: true,
-  },
   loading: true,
 };
 
@@ -39,9 +30,7 @@ type NotificationAction =
   | { type: 'MARK_ALL_READ' }
   | { type: 'DELETE_NOTIFICATION'; payload: string }
   | { type: 'CLEAR_ALL_NOTIFICATIONS' }
-  | { type: 'SET_SETTINGS'; payload: NotificationSettings }
-  | { type: 'SET_LOADING'; payload: boolean }
-  | { type: 'UPDATE_UNREAD_COUNT' };
+  | { type: 'SET_LOADING'; payload: boolean };
 
 const notificationReducer = (state: NotificationState, action: NotificationAction): NotificationState => {
   switch (action.type) {
@@ -94,11 +83,6 @@ const notificationReducer = (state: NotificationState, action: NotificationActio
         notifications: [],
         unreadCount: 0,
       };
-    case 'SET_SETTINGS':
-      return {
-        ...state,
-        settings: action.payload,
-      };
     case 'SET_LOADING':
       return {
         ...state,
@@ -114,7 +98,7 @@ const NotificationContext = createContext<NotificationContextType | undefined>(u
 export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [state, dispatch] = useReducer(notificationReducer, initialState);
 
-  // Fetch notifications and settings when component mounts
+  // Fetch notifications when component mounts
   useEffect(() => {
     initializeNotifications();
   }, []);
@@ -126,10 +110,6 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
       // Load notifications
       const notifications = await NotificationService.getNotifications();
       dispatch({ type: 'SET_NOTIFICATIONS', payload: notifications });
-      
-      // Load settings
-      const settings = await NotificationService.getSettings();
-      dispatch({ type: 'SET_SETTINGS', payload: settings });
     } catch (error) {
       console.error('Error initializing notifications:', error);
       dispatch({ type: 'SET_LOADING', payload: false });
@@ -181,15 +161,6 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
     }
   };
 
-  const updateSettings = async (settings: Partial<NotificationSettings>) => {
-    try {
-      const updatedSettings = await NotificationService.updateSettings(settings);
-      dispatch({ type: 'SET_SETTINGS', payload: updatedSettings });
-    } catch (error) {
-      console.error('Error updating settings:', error);
-    }
-  };
-
   const refreshNotifications = async () => {
     try {
       const notifications = await NotificationService.getNotifications();
@@ -206,7 +177,6 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
     markAllAsRead,
     deleteNotification,
     clearAllNotifications,
-    updateSettings,
     refreshNotifications,
   };
 
