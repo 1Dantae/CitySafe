@@ -14,6 +14,18 @@ const verticalScale = SCREEN_HEIGHT / 812; // 812 is the base height for iPhone 
 const scaleSize = (size: number) => Math.ceil(size * scale);
 const scaleVertical = (size: number) => Math.ceil(size * verticalScale);
 
+// Type for crime reports shown on the map
+interface CrimeReport {
+  _id: string;
+  incidentType?: string;
+  description?: string;
+  location?: {
+    type: 'Point';
+    coordinates: number[]; // [longitude, latitude]
+  };
+  [key: string]: any;
+}
+
 interface MapViewProps {
   userType: 'anonymous' | 'user' | null;
 }
@@ -35,7 +47,7 @@ const CustomMapView: React.FC<MapViewProps> = ({ userType }) => {
   
   const [currentRegion, setCurrentRegion] = React.useState(initialRegion);
   const [userLocation, setUserLocation] = React.useState<{ latitude: number; longitude: number } | null>(null);
-  const [crimeReports, setCrimeReports] = React.useState<any[]>([]);
+  const [crimeReports, setCrimeReports] = React.useState<CrimeReport[]>([]);
 
   useEffect(() => {
     const getLocation = async () => {
@@ -51,10 +63,13 @@ const CustomMapView: React.FC<MapViewProps> = ({ userType }) => {
         console.warn('Location permission error', err);
       }
     };
-    
+
+    // Consider making this configurable or reducing for better performance
+    const MAX_REPORTS_TO_FETCH = 100; // Reduced from 1000
+
     const fetchReports = async () => {
       try {
-        const reports = await getReports(0, 1000); // Fetch up to 1000 reports
+        const reports = await getReports(0, MAX_REPORTS_TO_FETCH); // Fetch up to 100 reports
         const geoReports = reports.filter(
           (report: any) => report.location && report.location.type === 'Point'
         );
@@ -145,19 +160,23 @@ const CustomMapView: React.FC<MapViewProps> = ({ userType }) => {
             pinColor={'blue'}
           />
         )}
-        {crimeReports.map(report => (
-          <Marker
-            key={report._id}
-            coordinate={{
-              latitude: report.location.coordinates[1],
-              longitude: report.location.coordinates[0],
-            }}
-            title={report.incidentType}
-            description={report.description}
-            pinColor="red"
-          />
-        ))}
-      </MapView>
+        {crimeReports.map(report => {
+          if (!report.location?.coordinates || report.location.coordinates.length < 2) {
+            return null;
+          }
+          return (
+            <Marker
+              key={report._id}
+              coordinate={{
+                latitude: report.location.coordinates[1],
+                longitude: report.location.coordinates[0],
+              }}
+              title={report.incidentType}
+              description={report.description}
+              pinColor="red"
+            />
+          );
+        })}      </MapView>
     </View>
   );
 };

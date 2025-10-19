@@ -85,19 +85,18 @@ const AppContent = () => {
       throw error;
     }
   };
+  
+  const setAuthenticatedUser = (userData: { id: string; fullName: string; email: string; phone?: string }) => {
+    setUser(userData);
+    setUserType('user');
+   setCurrentScreen('home');
+  };
 
   const handleRegister = async (userData: { fullName: string; email: string; phone: string; password: string }) => {
     try {
       const registerData = await register(userData);
       // Update user state with the returned user data
-      setUser({
-        id: registerData.user.id,
-        fullName: registerData.user.fullName,
-        email: registerData.user.email,
-        phone: registerData.user.phone,
-      });
-      setUserType('user');
-      setCurrentScreen('home');
+      setAuthenticatedUser(registerData.user);
     } catch (error) {
       console.error('Registration error:', error);
       // In a real app, you'd show an error message to the user
@@ -121,7 +120,13 @@ const AppContent = () => {
   const handleLogout = async () => {
     try {
       await clearAuthToken();
-      setUser(null);
+      // Clear user by setting an empty user object to satisfy the User type
+      setUser({
+        id: '',
+        fullName: '',
+        email: '',
+        phone: '',
+      });
       setUserType(null);
       setCurrentScreen('welcome');
     } catch (error) {

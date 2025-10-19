@@ -237,6 +237,12 @@ const ReportScreen: React.FC<ReportScreenProps> = ({ onBack }) => {
     return 'image';
   };
 
+  const isVideoFile = (uri: string): boolean => {
+    const videoExtensions = ['mp4', 'mov', 'avi', 'wmv', 'flv', 'webm'];
+    const extension = uri.split('.').pop()?.toLowerCase();
+    return extension ? videoExtensions.includes(extension) : false;
+  };
+
   const handleTimeChange = (event: any, selectedTime?: Date) => {
     setShowTimePicker(false);
     if (selectedTime) {
@@ -368,8 +374,8 @@ const ReportScreen: React.FC<ReportScreenProps> = ({ onBack }) => {
         // Transform backend document to local Report shape
         const formattedDate = full.createdAt ? new Date(full.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : (formData.date || new Date().toLocaleDateString());
         const reportObj = {
-          id: full.id || result.id,
-          title: full.incidentType || reportData.incident_type,
+          id: full._id || result.id,
+          title: full.incidentType || reportData.incidentType,
           description: full.description || reportData.description,
           location: full.location && typeof full.location === 'string' ? full.location : (full.location?.coordinates ? `${full.location.coordinates[1]}, ${full.location.coordinates[0]}` : formData.location),
           date: formattedDate,
@@ -377,6 +383,8 @@ const ReportScreen: React.FC<ReportScreenProps> = ({ onBack }) => {
           incidentType: full.incidentType || incidentTypeValue,
           anonymous: full.anonymous !== undefined ? full.anonymous : formData.anonymous,
           status: 'pending' as const,
+          media_url: full.media_url, // Make sure to include this
+          witnesses: full.witnesses ?? [], // ensure required field exists
         };
         addReport(reportObj);
       } catch (err) {
@@ -423,7 +431,7 @@ const ReportScreen: React.FC<ReportScreenProps> = ({ onBack }) => {
             {markerPosition && <Marker coordinate={markerPosition} draggable onDragEnd={(e) => {
               const { latitude, longitude } = e.nativeEvent.coordinate;
               setMarkerPosition({ latitude, longitude });
-              setFormData(prev => ({ ...formData, location: `${latitude}, ${longitude}` }));
+              setFormData(prev => ({ ...prev, location: `${latitude}, ${longitude}` }));
             }} />}
           </MapView>
         </View>
@@ -578,7 +586,7 @@ const ReportScreen: React.FC<ReportScreenProps> = ({ onBack }) => {
               </TouchableOpacity>
             ))}
           </View>
-        </View>
+        )}
 
         {/* Description */}
         <View style={[styles.fieldCard, styles.descriptionCard]}>

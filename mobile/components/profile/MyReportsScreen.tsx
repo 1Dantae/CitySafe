@@ -67,7 +67,7 @@ const MyReportsScreen: React.FC<MyReportsScreenProps> = ({ onBack }) => {
                 <Text style={styles.reportDate}>{report.date}</Text>
                 {/** Show image if backend provided media_url */}
                 {report.media_url ? (
-                  <Image source={{ uri: report.media_url }} style={{ width: '100%', height: 200, borderRadius: 8, marginBottom: 8 }} />
+                  <Image source={{ uri: report.media_url }} style={styles.mediaImage} />
                 ) : null}
                 <Text style={styles.reportDescription}>{report.description}</Text>
               </TouchableOpacity>
@@ -77,6 +77,8 @@ const MyReportsScreen: React.FC<MyReportsScreenProps> = ({ onBack }) => {
       </ScrollView>
     </View>
   );
+};
+
 type Styles = {
   container: ViewStyle;
   header: ViewStyle;
@@ -100,6 +102,7 @@ type Styles = {
   reportDate: TextStyle;
   reportDescription: TextStyle;
   mediaPreviewContainer: ViewStyle;
+  mediaImage: ImageStyle;
 };
 
 const styles = StyleSheet.create<Styles>({
@@ -230,6 +233,12 @@ const styles = StyleSheet.create<Styles>({
   },
   mediaPreviewContainer: {
     marginBottom: scaleVertical(12),
+  },
+  mediaImage: {
+    width: '100%',
+    height: 200,
+    borderRadius: 8,
+    marginBottom: 8,
   },
 });
 

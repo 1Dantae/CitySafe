@@ -62,6 +62,9 @@ def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(securit
         if user_id is None:
             raise HTTPException(status_code=401, detail="Could not validate credentials")
         return user_id
+    except Exception:
+        # Any decoding or validation error should be treated as authentication failure
+        raise HTTPException(status_code=401, detail="Could not validate credentials")
 
 
 @router.get('/me')
