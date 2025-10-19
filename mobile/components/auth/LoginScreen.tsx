@@ -12,7 +12,7 @@ import { Colors } from '../../constants/colors';
 
 interface LoginScreenProps {
   onBack: () => void;
-  onLogin: () => void;
+  onLogin: (email: string, password: string) => void;
   onAdminLogin: () => void;
 }
 
@@ -24,6 +24,26 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleLoginPress = async () => {
+    if (!email || !password) {
+      alert('Please enter both email and password');
+      return;
+    }
+    
+    setIsLoading(true);
+    try {
+      await onLogin(email, password);
+    } catch (error) {
+      console.error('Login failed:', error);
+      const message = error && (error as any).message ? (error as any).message : 'Login failed. Please check your credentials and try again.';
+      // Surface a friendly message but avoid leaking sensitive internals
+      alert(message.includes('HTTP error') ? 'Login failed. Please check your credentials and try again.' : message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -50,6 +70,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
                 onChangeText={setEmail}
                 keyboardType="email-address"
                 autoCapitalize="none"
+                editable={!isLoading}
               />
             </View>
           </View>
@@ -65,6 +86,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
                 value={password}
                 onChangeText={setPassword}
                 secureTextEntry={!showPassword}
+                editable={!isLoading}
               />
               <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
                 <Ionicons
@@ -77,18 +99,32 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
           </View>
 
           {/* Sign In Button */}
-          <TouchableOpacity style={styles.signInButton} onPress={onLogin}>
-            <Text style={styles.signInButtonText}>Sign In</Text>
+          <TouchableOpacity 
+            style={[styles.signInButton, isLoading && styles.signInButtonDisabled]} 
+            onPress={handleLoginPress}
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <>
+                <Ionicons name="hourglass" size={24} color={Colors.white} />
+                <Text style={styles.signInButtonText}>Signing In...</Text>
+              </>
+            ) : (
+              <>
+                <Ionicons name="log-in" size={24} color={Colors.white} />
+                <Text style={styles.signInButtonText}>Sign In</Text>
+              </>
+            )}
           </TouchableOpacity>
 
           {/* Forgot Password */}
-          <TouchableOpacity style={styles.forgotPassword}>
+          <TouchableOpacity style={styles.forgotPassword} disabled={isLoading}>
             <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
           </TouchableOpacity>
         </View>
 
         {/* Admin Login Link */}
-        <TouchableOpacity style={styles.adminLink} onPress={onAdminLogin}>
+        <TouchableOpacity style={styles.adminLink} onPress={onAdminLogin} disabled={isLoading}>
           <Text style={styles.adminLinkText}>Admin Login</Text>
         </TouchableOpacity>
       </ScrollView>
@@ -167,6 +203,9 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 4,
     elevation: 4,
+  },
+  signInButtonDisabled: {
+    backgroundColor: Colors.gray,
   },
   signInButtonText: {
     color: Colors.white,

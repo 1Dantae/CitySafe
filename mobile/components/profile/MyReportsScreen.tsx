@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import React from 'react';
+import React, { useEffect } from 'react';
 import {
   ScrollView,
   StyleSheet,
@@ -7,7 +7,6 @@ import {
   TouchableOpacity,
   View,
   Image,
-  Dimensions,
 } from 'react-native';
 import { Video, ResizeMode } from 'expo-av';
 import { Colors } from '../../constants/colors';
@@ -26,7 +25,13 @@ interface MyReportsScreenProps {
 }
 
 const MyReportsScreen: React.FC<MyReportsScreenProps> = ({ onBack }) => {
-  const { reports } = useUserProfile();
+  const { reports, user, fetchMyReports } = useUserProfile();
+
+  useEffect(() => {
+    if (user?.id) fetchMyReports(user.id);
+    else fetchMyReports();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
 
   const isVideoFile = (uri: string): boolean => {
     const videoExtensions = ['.mov', '.mp4', '.avi', '.webm', '.wmv', '.flv', '.f4v', '.f4p', '.f4a', '.f4b'];
@@ -65,62 +70,12 @@ const MyReportsScreen: React.FC<MyReportsScreenProps> = ({ onBack }) => {
                     <Text style={styles.reportStatusPending}>Pending</Text>
                   )}
                 </View>
-                <Text style={styles.reportDate}>{report.date} at {report.time || 'N/A'}</Text>
-                <View style={styles.reportDetails}>
-                  <Text style={styles.detailLabel}>Time:</Text>
-                  <Text style={styles.detailText}>{report.time || 'N/A'}</Text>
-                </View>
-                <View style={styles.reportDetails}>
-                  <Text style={styles.detailLabel}>Location:</Text>
-                  <Text style={styles.detailText}>{report.location}</Text>
-                </View>
-                <View style={styles.reportDetails}>
-                  <Text style={styles.detailLabel}>Type:</Text>
-                  <Text style={styles.detailText}>{report.incidentType}</Text>
-                </View>
-                <View style={styles.reportDetails}>
-                  <Text style={styles.detailLabel}>Witnesses:</Text>
-                  <Text style={styles.detailText}>{report.witnesses || 'N/A'}</Text>
-                </View>
-                <View style={styles.reportDetails}>
-                  <Text style={styles.detailLabel}>Anonymous:</Text>
-                  <Text style={styles.detailText}>{report.anonymous ? 'Yes' : 'No'}</Text>
-                </View>
-                {!report.anonymous && (
-                  <>
-                    <View style={styles.reportDetails}>
-                      <Text style={styles.detailLabel}>Name:</Text>
-                      <Text style={styles.detailText}>{report.name || 'N/A'}</Text>
-                    </View>
-                    <View style={styles.reportDetails}>
-                      <Text style={styles.detailLabel}>Phone:</Text>
-                      <Text style={styles.detailText}>{report.phone || 'N/A'}</Text>
-                    </View>
-                    <View style={styles.reportDetails}>
-                      <Text style={styles.detailLabel}>Email:</Text>
-                      <Text style={styles.detailText}>{report.email || 'N/A'}</Text>
-                    </View>
-                  </>
-                )}
-                {report.mediaUri && (
-                  <View style={styles.mediaPreviewContainer}>
-                    {isVideoFile(report.mediaUri) ? (
-                      <Video
-                        source={{ uri: report.mediaUri }}
-                        style={styles.mediaPreview}
-                        useNativeControls
-                        resizeMode={ResizeMode.CONTAIN}
-                        isLooping={false}
-                      />
-                    ) : (
-                      <Image source={{ uri: report.mediaUri }} style={styles.mediaPreview} />
-                    )}
-                  </View>
-                )}
-                <View style={styles.reportDetails}>
-                  <Text style={styles.detailLabel}>Description:</Text>
-                  <Text style={styles.detailText}>{report.description}</Text>
-                </View>
+                <Text style={styles.reportDate}>{report.date}</Text>
+                {/** Show image if backend provided media_url */}
+                {report.media_url ? (
+                  <Image source={{ uri: report.media_url }} style={{ width: '100%', height: 200, borderRadius: 8, marginBottom: 8 }} />
+                ) : null}
+                <Text style={styles.reportDescription}>{report.description}</Text>
               </TouchableOpacity>
             ))}
           </View>

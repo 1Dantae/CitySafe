@@ -12,7 +12,6 @@ import React, { useState } from 'react';
 import {
   Alert,
   Image,
-  Platform,
   ScrollView,
   StyleSheet,
   Switch,
@@ -25,6 +24,8 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { Video, ResizeMode } from 'expo-av';
 import { Colors } from '../../constants/colors';
 import { useUserProfile } from '../profile/UserProfileContext';
+import { submitReport, getReportById } from '../../services/api';
+import * as Location from 'expo-location';
 
 interface ReportScreenProps {
   onBack: () => void;
@@ -44,7 +45,7 @@ const incidentTypes = [
 ];
 
 const ReportScreen: React.FC<ReportScreenProps> = ({ onBack }) => {
-  const { addReport } = useUserProfile();
+  const { user, addReport } = useUserProfile();
   const [formData, setFormData] = useState({
     incidentType: '',
     date: '',
@@ -53,9 +54,9 @@ const ReportScreen: React.FC<ReportScreenProps> = ({ onBack }) => {
     description: '',
     witnesses: '',
     anonymous: true,
-    name: '',
-    phone: '',
-    email: '',
+    name: user?.fullName || '', // Pre-fill with user's name if authenticated
+    phone: user?.phone || '',   // Pre-fill with user's phone if authenticated
+    email: user?.email || '',   // Pre-fill with user's email if authenticated
   });
 
   const [showTypePicker, setShowTypePicker] = useState(false);
@@ -69,9 +70,23 @@ const ReportScreen: React.FC<ReportScreenProps> = ({ onBack }) => {
   const [cameraPermissionInformation, requestPermission] = useCameraPermissions();
   const [mediaPermissionInformation, requestMediaPermission] = useMediaLibraryPermissions();
 
-  const isVideoFile = (uri: string): boolean => {
-    const videoExtensions = ['.mov', '.mp4', '.avi', '.webm', '.wmv', '.flv', '.f4v', '.f4p', '.f4a', '.f4b'];
-    return videoExtensions.some(ext => uri.toLowerCase().endsWith(ext));
+  // Handle address change with potential geocoding
+  const handleAddressChange = (text: string) => {
+    setFormData({ ...formData, location: text });
+    
+    // Clear suggestions if text is empty
+    if (text.trim() === '') {
+      setAddressSuggestions([]);
+      setShowSuggestions(false);
+      return;
+    }
+  };
+
+  // Select address from suggestions
+  const selectAddressSuggestion = (suggestion: string) => {
+    setFormData({ ...formData, location: suggestion });
+    setAddressSuggestions([]);
+    setShowSuggestions(false);
   };
 
   async function verifyPermissions() {
@@ -140,55 +155,7 @@ const ReportScreen: React.FC<ReportScreenProps> = ({ onBack }) => {
     }
   }
 
-  // Mock function for address suggestions - in a real app, this would call an API
-  const getAddressSuggestions = (input: string) => {
-    // This is a mock implementation - in a real app, this would call an API like Google Places
-    const jamaicaLocations = [
-      "Kingston, Jamaica",
-      "Montego Bay, Jamaica",
-      "Ocho Rios, Jamaica",
-      "Portmore, Jamaica", 
-      "Spanish Town, Jamaica",
-      "New Kingston, Jamaica",
-      "Half Way Tree, Jamaica",
-      "Mandeville, Jamaica",
-      "St. Ann's Bay, Jamaica",
-      "Falmouth, Jamaica",
-      "Runaway Bay, Jamaica",
-      "Negril, Jamaica",
-      "Black River, Jamaica",
-      "Port Antonio, Jamaica",
-      "Mona Commons, Kingston",
-      "Papine, Kingston",
-      "Constant Spring, Kingston",
-      "Liguanea, Kingston",
-      "Cross Roads, Kingston",
-      "Half Way Tree, St. Andrew"
-    ];
-    
-    // Filter locations based on user input
-    return jamaicaLocations.filter(location => 
-      location.toLowerCase().includes(input.toLowerCase())
-    ).slice(0, 5); // Return top 5 matches
-  };
 
-  const handleAddressChange = (text: string) => {
-    setFormData({ ...formData, location: text });
-    
-    // If the user has entered at least 2 characters, show suggestions
-    if (text.length >= 2) {
-      const suggestions = getAddressSuggestions(text);
-      setAddressSuggestions(suggestions);
-      setShowSuggestions(true);
-    } else {
-      setShowSuggestions(false);
-    }
-  };
-
-  const selectAddressSuggestion = (suggestion: string) => {
-    setFormData({ ...formData, location: suggestion });
-    setShowSuggestions(false);
-  };
 
   const handleDateChange = (event: any, selectedDate?: Date) => {
     setShowDatePicker(false);
@@ -225,6 +192,25 @@ const ReportScreen: React.FC<ReportScreenProps> = ({ onBack }) => {
     }
   };
 
+  // Helper function to determine media type based on file extension
+  const getMediaType = (uri: string): string => {
+    const extension = uri.split('.').pop()?.toLowerCase();
+    if (!extension) return 'image';
+
+    // Common image extensions
+    if (['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp'].includes(extension)) {
+      return `image/${extension}`;
+    }
+    
+    // Common video extensions
+    if (['mp4', 'mov', 'avi', 'wmv', 'flv', 'webm'].includes(extension)) {
+      return `video/${extension}`;
+    }
+    
+    // Default to image if unknown
+    return 'image';
+  };
+
   const handleTimeChange = (event: any, selectedTime?: Date) => {
     setShowTimePicker(false);
     if (selectedTime) {
@@ -242,39 +228,142 @@ const ReportScreen: React.FC<ReportScreenProps> = ({ onBack }) => {
     }
   };
 
-  const handleSubmit = () => {
-    if (!formData.incidentType || !formData.location || !formData.description) {
-      Alert.alert('Error', 'Please fill in all required fields');
-      return;
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const validateForm = () => {
+    // incident type
+    const incidentTypeValue = formData.incidentType === 'Other' ? customIncident : formData.incidentType;
+    if (!incidentTypeValue || incidentTypeValue.trim() === '') {
+      Alert.alert('Validation error', 'Please select or enter the type of incident.');
+      return false;
     }
 
-    // Create a report object to add to the user's profile
-    const reportDate = formData.date ? new Date(formData.date.split('/').reverse().join('/')) : new Date();
-    const formattedDate = reportDate.toLocaleDateString('en-US', { 
-      year: 'numeric', 
-      month: 'short', 
-      day: 'numeric' 
-    });
-    
-    const reportTitle = formData.incidentType === 'Other' && customIncident 
-      ? customIncident 
-      : formData.incidentType;
-    
-    const newReport = {
-      id: Date.now().toString(), // In a real app, this would be from the backend
-      title: reportTitle,
-      description: formData.description,
-      location: formData.location,
-      date: formattedDate,
-      status: 'pending' as const,
-    };
+    // location
+    if (!formData.location || formData.location.trim() === '') {
+      Alert.alert('Validation error', 'Please enter the location of the incident.');
+      return false;
+    }
 
-    // Add the report to the user's profile
-    addReport(newReport);
+    // description
+    if (!formData.description || formData.description.trim() === '') {
+      Alert.alert('Validation error', 'Please enter a description of the incident.');
+      return false;
+    }
 
-    Alert.alert('Success', 'Report submitted successfully!', [
-      { text: 'OK', onPress: onBack },
-    ]);
+    // contact info when not anonymous
+    if (!formData.anonymous) {
+      if (!formData.name || formData.name.trim() === '') {
+        Alert.alert('Validation error', 'Please enter your name or toggle anonymous.');
+        return false;
+      }
+      if (!formData.phone || formData.phone.trim() === '') {
+        Alert.alert('Validation error', 'Please enter your phone number or toggle anonymous.');
+        return false;
+      }
+      if (!formData.email || formData.email.trim() === '') {
+        Alert.alert('Validation error', 'Please enter your email or toggle anonymous.');
+        return false;
+      }
+    }
+
+    return true;
+  };
+
+  const handleSubmit = async () => {
+    if (isSubmitting) return; // Prevent multiple submissions
+    
+    // Validate form fields
+    if (!validateForm()) return;
+
+    setIsSubmitting(true);
+
+    try {
+      // Request device location and include coordinates when available
+      let lat: number | undefined = undefined;
+      let lng: number | undefined = undefined;
+      try {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status === 'granted') {
+          const pos = await Location.getCurrentPositionAsync({});
+          lat = pos.coords.latitude;
+          lng = pos.coords.longitude;
+        }
+      } catch (err) {
+        console.warn('Could not get device location', err);
+      }
+      
+      // Prepare report data
+      // Ensure incidentType uses customIncident if provided and formats it correctly for backend
+      const incidentTypeValue = formData.incidentType === 'Other' && customIncident
+        ? customIncident.toLowerCase().replace(/\s+/g, '_')
+        : formData.incidentType.toLowerCase().replace(/\s+/g, '_');
+
+      // Fill default date/time if not provided
+      const finalDate = formData.date && formData.date.trim() !== '' ? formData.date : format(new Date(), 'MMM dd, yyyy');
+      const finalTime = formData.time && formData.time.trim() !== '' ? formData.time : format(new Date(), 'hh:mm a');
+
+      // Sanitize media payload
+      let mediaPayload: any = undefined;
+      if (pickedImage) {
+        const name = pickedImage.split('/').pop() || 'media';
+        const type = getMediaType(pickedImage) || 'image/jpeg';
+        mediaPayload = { uri: pickedImage, name, type };
+      }
+
+      const reportData: any = {
+        incidentType: incidentTypeValue,
+        date: finalDate,
+        time: finalTime,
+        location: formData.location,
+        description: formData.description,
+        witnesses: formData.witnesses, // Include witnesses field
+        anonymous: formData.anonymous,
+        name: formData.anonymous ? undefined : formData.name,
+        phone: formData.anonymous ? undefined : formData.phone,
+        email: formData.anonymous ? undefined : formData.email,
+        media: mediaPayload,
+      };
+
+      // Submit report to backend
+      // attach lat/lng if available
+      if (lat !== undefined && lng !== undefined) {
+        // @ts-ignore
+        reportData.lat = lat;
+        // @ts-ignore
+        reportData.lng = lng;
+      }
+
+      // Get user ID if available
+      const userId = user?.id;
+      const result = await submitReport(reportData, userId);
+
+      // fetch full report from backend and add to local context
+      try {
+        const full = await getReportById(result.id);
+        // Transform backend document to local Report shape
+        const formattedDate = full.createdAt ? new Date(full.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : (formData.date || new Date().toLocaleDateString());
+        const reportObj = {
+          id: full.id || result.id,
+          title: full.incidentType || reportData.incident_type,
+          description: full.description || reportData.description,
+          location: full.location && typeof full.location === 'string' ? full.location : (full.location?.coordinates ? `${full.location.coordinates[1]}, ${full.location.coordinates[0]}` : formData.location),
+          date: formattedDate,
+          status: 'pending' as const,
+        };
+        addReport(reportObj);
+      } catch (err) {
+        console.warn('Could not fetch full report after submit', err);
+      }
+
+      Alert.alert('Success', 'Report submitted successfully!', [
+        { text: 'OK', onPress: onBack },
+      ]);
+    } catch (error: any) {
+      console.error('Error submitting report:', error);
+      Alert.alert('Error', `Failed to submit report: ${error.message || 'Unknown error'}`);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -445,7 +534,19 @@ const ReportScreen: React.FC<ReportScreenProps> = ({ onBack }) => {
           </View>
         )}
 
-
+        {/* Witnesses */}
+        <View style={styles.fieldCard}>
+          <View style={styles.iconContainer}>
+            <Ionicons name="people" size={24} color={Colors.white} />
+          </View>
+          <TextInput
+            style={styles.fieldInput}
+            placeholder="Witnesses (optional)"
+            value={formData.witnesses}
+            onChangeText={(text) => setFormData({ ...formData, witnesses: text })}
+            placeholderTextColor={Colors.textLight}
+          />
+        </View>
 
         {/* Description */}
         <View style={[styles.fieldCard, styles.descriptionCard]}>
@@ -569,9 +670,22 @@ const ReportScreen: React.FC<ReportScreenProps> = ({ onBack }) => {
         )}
 
         {/* Submit Button */}
-        <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
-          <Ionicons name="send" size={24} color={Colors.white} />
-          <Text style={styles.submitButtonText}>Submit Report</Text>
+        <TouchableOpacity 
+          style={[styles.submitButton, isSubmitting && styles.submitButtonDisabled]} 
+          onPress={handleSubmit}
+          disabled={isSubmitting}
+        >
+          {isSubmitting ? (
+            <>
+              <Ionicons name="hourglass" size={24} color={Colors.white} />
+              <Text style={styles.submitButtonText}>Submitting...</Text>
+            </>
+          ) : (
+            <>
+              <Ionicons name="send" size={24} color={Colors.white} />
+              <Text style={styles.submitButtonText}>Submit Report</Text>
+            </>
+          )}
         </TouchableOpacity>
       </ScrollView>
     </View>
@@ -688,6 +802,9 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     marginLeft: 12,
+  },
+  submitButtonDisabled: {
+    backgroundColor: Colors.gray,
   },
   suggestionsContainer: {
     backgroundColor: Colors.white,

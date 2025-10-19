@@ -1,0 +1,7 @@
+fastapi
+uvicorn[standard]
+pymongo
+python-multipart==0.0.20
+passlib[bcrypt]==1.7.4
+PyJWT
+email-validator

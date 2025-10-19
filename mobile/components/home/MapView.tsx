@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
 import { StyleSheet, Text, View, Dimensions } from 'react-native';
 import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
+import * as Location from 'expo-location';
 import { Colors } from '../../constants/colors';
 
 // Scaling function based on screen dimensions
@@ -15,12 +16,6 @@ const scaleVertical = (size: number) => Math.ceil(size * verticalScale);
 interface MapViewProps {
   userType: 'anonymous' | 'user' | null;
 }
-
-const crimeReports = [
-  { id: 1, type: 'Theft', lat: 18.0179, lng: -76.8099, date: '2025-10-10' },
-  { id: 2, type: 'Vandalism', lat: 18.0199, lng: -76.8119, date: '2025-10-11' },
-  { id: 3, type: 'Assault', lat: 18.0159, lng: -76.8079, date: '2025-10-12' },
-];
 
 const CustomMapView: React.FC<MapViewProps> = ({ userType }) => {
   // Jamaica boundary coordinates
@@ -81,6 +76,29 @@ const CustomMapView: React.FC<MapViewProps> = ({ userType }) => {
     setCurrentRegion(clamped);
   };
 
+  const [region, setRegion] = useState(defaultRegion);
+  const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
+  // Placeholder list to avoid "Cannot find name 'crimeReports'"
+  const crimeReports: { id: string; type: string; date: string }[] = [];
+
+  useEffect(() => {
+    const getLocation = async () => {
+      try {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status === 'granted') {
+          const pos = await Location.getCurrentPositionAsync({});
+          const { latitude, longitude } = pos.coords;
+          setUserLocation({ latitude, longitude });
+          setRegion({ ...region, latitude, longitude });
+        }
+      } catch (err) {
+        console.warn('Location permission error', err);
+      }
+    };
+    getLocation();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Show placeholder for anonymous users
   if (userType === 'anonymous') {
     return (
@@ -110,19 +128,14 @@ const CustomMapView: React.FC<MapViewProps> = ({ userType }) => {
         minZoomLevel={8} // Limit how far out users can zoom
         maxZoomLevel={18} // Limit how far in users can zoom
       >
-        {/* Crime Report Markers */}
-        {crimeReports.map((crime) => (
+       {userLocation && (
           <Marker
-            key={crime.id}
-            coordinate={{
-              latitude: crime.lat,
-              longitude: crime.lng,
-            }}
-            title={crime.type}
-            description={`Date: ${crime.date}`}
-            pinColor={Colors.emergency}
+            key={'__user_location__'}
+            coordinate={{ latitude: userLocation.latitude, longitude: userLocation.longitude }}
+            title={'Your Location'}
+            pinColor={'blue'}
           />
-        ))}
+        )}
       </MapView>
 
 

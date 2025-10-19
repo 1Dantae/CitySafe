@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Law Enforcement Dashboard - SafeCity</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="dashboard law-enforcement-theme">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="badge-icon">🛡️</div>
+                <h2>SafeCity</h2>
+                <p class="user-role">Law Enforcement</p>
+            </div>
+            
+            <nav class="sidebar-nav">
+                <a href="#overview" class="nav-item active" onclick="showSection('overview')">
+                    <span class="icon">📊</span>
+                    <span>Overview</span>
+                </a>
+                <a href="#reports" class="nav-item" onclick="showSection('reports')">
+                    <span class="icon">📋</span>
+                    <span>Reports</span>
+                    <span class="badge">12</span>
+                </a>
+                <a href="#emergencies" class="nav-item" onclick="showSection('emergencies')">
+                    <span class="icon">🚨</span>
+                    <span>Active Emergencies</span>
+                    <span class="badge urgent">2</span>
+                </a>
+                <a href="#map" class="nav-item" onclick="showSection('map')">
+                    <span class="icon">🗺️</span>
+                    <span>Crime Map</span>
+                </a>
+                <a href="#analytics" class="nav-item" onclick="showSection('analytics')">
+                    <span class="icon">📈</span>
+                    <span>Analytics</span>
+                </a>
+            </nav>
+            
+            <div class="sidebar-footer">
+                <button onclick="logout()" class="btn-logout">
+                    <span class="icon">🚪</span>
+                    <span>Logout</span>
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="dashboard-header">
+                <div class="header-left">
+                    <h1 id="pageTitle">Law Enforcement Dashboard</h1>
+                    <p class="breadcrumb">Home / Dashboard</p>
+                </div>
+                <div class="header-right">
+                    <div class="emergency-status">
+                        <span class="status-indicator red pulse"></span>
+                        <span>2 Active Emergencies</span>
+                    </div>
+                    <button class="notification-btn">
+                        🔔
+                        <span class="notification-badge">8</span>
+                    </button>
+                    <div class="user-profile">
+                        <img src="https://via.placeholder.com/40" alt="Officer">
+                        <div>
+                            <span id="userName">Officer Badge #12345</span>
+                            <p class="user-dept" id="userDept">JDF</p>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Overview Section -->
+            <section id="overview" class="content-section active">
+                <div class="alert-banner urgent">
+                    <span class="alert-icon">⚠️</span>
+                    <strong>ACTIVE EMERGENCY:</strong> Assault in progress - Kingston Central (2 min ago)
+                    <button class="btn btn-danger">Respond</button>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon red">🚨</div>
+                        <div class="stat-info">
+                            <h3>Active Emergencies</h3>
+                            <p class="stat-number">2</p>
+                            <span class="stat-change">Requires immediate attention</span>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon orange">📋</div>
+                        <div class="stat-info">
+                            <h3>Pending Reports</h3>
+                            <p class="stat-number">12</p>
+                            <span class="stat-change">8 new today</span>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon green">✅</div>
+                        <div class="stat-info">
+                            <h3>Resolved Today</h3>
+                            <p class="stat-number">15</p>
+                            <span class="stat-change positive">+20% from yesterday</span>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon blue">📞</div>
+                        <div class="stat-info">
+                            <h3>911 Calls Today</h3>
+                            <p class="stat-number">23</p>
+                            <span class="stat-change">Average response: 3.2 min</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="priority-reports">
+                    <h3>High Priority Reports</h3>
+                    <div class="report-list">
+                        <div class="report-item urgent">
+                            <div class="report-status">
+                                <span class="priority-badge high">HIGH</span>
+                                <span class="report-type">Assault</span>
+                            </div>
+                            <div class="report-details">
+                                <h4>Report #00245 - Assault in Progress</h4>
+                                <p><strong>Location:</strong> 123 Main St, Kingston Central</p>
+                                <p><strong>Time:</strong> 2 minutes ago</p>
+                                <p><strong>Reporter:</strong> Anonymous (Verified)</p>
+                                <p><strong>Description:</strong> Physical altercation between multiple individuals</p>
+                            </div>
+                            <div class="report-actions">
+                                <button class="btn btn-danger">Dispatch Unit</button>
+                                <button class="btn btn-secondary">View Details</button>
+                                <button class="btn btn-secondary">Contact Reporter</button>
+                            </div>
+                        </div>
+
+                        <div class="report-item urgent">
+                            <div class="report-status">
+                                <span class="priority-badge high">HIGH</span>
+                                <span class="report-type">Burglary</span>
+                            </div>
+                            <div class="report-details">
+                                <h4>Report #00244 - Burglary in Progress</h4>
+                                <p><strong>Location:</strong> 456 Oak Ave, Kingston</p>
+                                <p><strong>Time:</strong> 10 minutes ago</p>
+                                <p><strong>Reporter:</strong> John Doe (User #1234)</p>
+                                <p><strong>Description:</strong> Suspects breaking into residence</p>
+                            </div>
+                            <div class="report-actions">
+                                <button class="btn btn-danger">Dispatch Unit</button>
+                                <button class="btn btn-secondary">View Details</button>
+                                <button class="btn btn-secondary">Contact Reporter</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Reports Section -->
+            <section id="reports" class="content-section">
+                <div class="section-header">
+                    <h2>All Crime Reports</h2>
+                    <div class="filter-buttons">
+                        <button class="filter-btn active">All</button>
+                        <button class="filter-btn">Today</button>
+                        <button class="filter-btn">This Week</button>
+                        <button class="filter-btn">Pending</button>
+                    </div>
+                </div>
+
+                <div class="reports-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Priority</th>
+                                <th>Type</th>
+                                <th>Location</th>
+                                <th>Date & Time</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr class="priority-high">
+                                <td>#00245</td>
+                                <td><span class="priority-badge high">HIGH</span></td>
+                                <td><span class="tag red">Assault</span></td>
+                                <td>Kingston Central</td>
+                                <td>Oct 18, 10:45 AM</td>
+                                <td><span class="status-badge new">Active</span></td>
+                                <td>
+                                    <button class="btn-action danger">Respond</button>
+                                    <button class="btn-action">View</button>
+                                </td>
+                            </tr>
+                            <tr class="priority-medium">
+                                <td>#00244</td>
+                                <td><span class="priority-badge medium">MEDIUM</span></td>
+                                <td><span class="tag orange">Vandalism</span></td>
+                                <td>Kingston West</td>
+                                <td>Oct 18, 09:30 AM</td>
+                                <td><span class="status-badge pending">Pending</span></td>
+                                <td>
+                                    <button class="btn-action">Assign</button>
+                                    <button class="btn-action">View</button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>#00243</td>
+                                <td><span class="priority-badge low">LOW</span></td>
+                                <td><span class="tag blue">Suspicious Activity</span></td>
+                                <td>Kingston North</td>
+                                <td>Oct 18, 08:15 AM</td>
+                                <td><span class="status-badge resolved">Resolved</span></td>
+                                <td>
+                                    <button class="btn-action">View</button>
+                                    <button class="btn-action">Archive</button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Active Emergencies -->
+            <section id="emergencies" class="content-section">
+                <h2>Active Emergency Situations</h2>
+                
+                <div class="emergency-grid">
+                    <div class="emergency-card critical">
+                        <div class="emergency-header">
+                            <h3>🚨 EMERGENCY #E2025-001</h3>
+                            <span class="time-badge pulse">2 MIN AGO</span>
+                        </div>
+                        <div class="emergency-body">
+                            <div class="emergency-detail">
+                                <strong>Type:</strong> Assault in Progress
+                            </div>
+                            <div class="emergency-detail">
+                                <strong>Location:</strong> 123 Main St, Kingston Central
+                                <button class="btn-sm">View on Map</button>
+                            </div>
+                            <div class="emergency-detail">
+                                <strong>Reporter:</strong> Anonymous (Via Mobile App)
+                            </div>
+                            <div class="emergency-detail">
+                                <strong>Description:</strong> Physical altercation, multiple individuals, possible weapons
+                            </div>
+                            <div class="emergency-detail">
+                                <strong>Units Dispatched:</strong> Unit 12, Unit 34
+                            </div>
+                        </div>
+                        <div class="emergency-actions">
+                            <button class="btn btn-danger btn-full">Contact Reporter</button>
+                            <button class="btn btn-secondary btn-full">Dispatch Additional Units</button>
+                            <button class="btn btn-secondary btn-full">Mark as Resolved</button>
+                        </div>
+                    </div>
+
+                    <div class="emergency-card critical">
+                        <div class="emergency-header">
+                            <h3>🚨 EMERGENCY #E2025-002</h3>
+                            <span class="time-badge pulse">10 MIN AGO</span>
+                        </div>
+                        <div class="emergency-body">
+                            <div class="emergency-detail">
+                                <strong>Type:</strong> Burglary in Progress
+                            </div>
+                            <div class="emergency-detail">
+                                <strong>Location:</strong> 456 Oak Ave, Kingston
+                                <button class="btn-sm">View on Map</button>
+                            </div>
+                            <div class="emergency-detail">
+                                <strong>Reporter:</strong> John Doe (User #1234)
+                            </div>
+                            <div class="emergency-detail">
+                                <strong>Description:</strong> Multiple suspects breaking into residence
+                            </div>
+                            <div class="emergency-detail">
+                                <strong>Units Dispatched:</strong> Unit 56
+                            </div>
+                        </div>
+                        <div class="emergency-actions">
+                            <button class="btn btn-danger btn-full">Contact Reporter</button>
+                            <button class="btn btn-secondary btn-full">Dispatch Additional Units</button>
+                            <button class="btn btn-secondary btn-full">Mark as Resolved</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Crime Map -->
+            <section id="map" class="content-section">
+                <h2>Crime Incident Map</h2>
+                <div class="map-container">
+                    <div class="map-placeholder">
+                        <p>🗺️ Interactive Map</p>
+                        <p>Kingston, Jamaica</p>
+                        <p class="small-text">Showing all reported incidents</p>
+                        <div class="map-legend">
+                            <div class="legend-item">
+                                <span class="legend-marker red"></span> Active Emergencies
+                            </div>
+                            <div class="legend-item">
+                                <span class="legend-marker orange"></span> Pending Reports
+                            </div>
+                            <div class="legend-item">
+                                <span class="legend-marker green"></span> Resolved
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Analytics -->
+            <section id="analytics" class="content-section">
+                <h2>Crime Analytics</h2>
+                
+                <div class="charts-grid">
+                    <div class="chart-card">
+                        <h3>Reports by Type (This Month)</h3>
+                        <div class="chart-placeholder">
+                            <p>Chart: Crime Type Distribution</p>
+                        </div>
+                    </div>
+
+                    <div class="chart-card">
+                        <h3>Response Time Trends</h3>
+                        <div class="chart-placeholder">
+                            <p>Chart: Average Response Times</p>
+                        </div>
+                    </div>
+
+                    <div class="chart-card">
+                        <h3>Incidents by Location</h3>
+                        <div class="chart-placeholder">
+                            <p>Chart: Geographic Distribution</p>
+                        </div>
+                    </div>
+
+                    <div class="chart-card">
+                        <h3>Resolution Rate</h3>
+                        <div class="chart-placeholder">
+                            <p>Chart: Cases Resolved vs Pending</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

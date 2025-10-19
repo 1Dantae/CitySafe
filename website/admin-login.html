@@ -1,0 +1,229 @@
+</html><!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Login - SafeCity</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="auth-page">
+        <a href="index.html" class="back-btn">← Back to Home</a>
+        
+        <div class="auth-container">
+            <div class="auth-card">
+                <div class="auth-header">
+                    <h2>Admin Login</h2>
+                    <p>Access the SafeCity Admin Dashboard</p>
+                    <div class="test-credentials">
+                        <p><strong>Test Admin:</strong> admin@safecity.com</p>
+                        <p><strong>Password:</strong> Admin123!</p>
+                    </div>
+                </div>
+
+                <form id="adminLoginForm" class="auth-form">
+                    <div class="form-group">
+                        <label for="email">Email Address</label>
+                        <input type="email" id="email" name="email" required placeholder="admin@safecity.com">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="password">Password</label>
+                        <div class="password-input">
+                            <input type="password" id="password" name="password" required placeholder="Enter password">
+                            <button type="button" class="toggle-password" onclick="togglePassword()">
+                                <span id="eyeIcon">👁️</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="remember">
+                            <span>Remember me</span>
+                        </label>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-full">Sign In</button>
+
+                    <div class="form-footer">
+                        <a href="#" class="link">Forgot Password?</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Change Password Modal -->
+    <div id="changePasswordModal" class="modal">
+        <div class="modal-content">
+            <h2>Change Password</h2>
+            <p>You must change your password before accessing the system.</p>
+            
+            <form id="changePasswordForm" class="auth-form">
+                <div class="form-group">
+                    <label for="newPassword">New Password</label>
+                    <div class="password-input">
+                        <input type="password" id="newPassword" name="newPassword" required 
+                               placeholder="Enter new password" minlength="8">
+                        <button type="button" class="toggle-password" onclick="toggleNewPassword()">
+                            <span id="eyeIcon1">👁️</span>
+                        </button>
+                    </div>
+                    <small>Password must be at least 8 characters</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="confirmPassword">Confirm Password</label>
+                    <div class="password-input">
+                        <input type="password" id="confirmPassword" name="confirmPassword" required 
+                               placeholder="Confirm new password">
+                        <button type="button" class="toggle-password" onclick="toggleConfirmPassword()">
+                            <span id="eyeIcon2">👁️</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div id="passwordError" class="error-message"></div>
+
+                <button type="submit" class="btn btn-primary btn-full">Update Password</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Test accounts with default passwords
+        const testAccounts = [
+            { email: 'admin@safecity.com', password: 'Admin123!', role: 'admin', firstLogin: false },
+            { email: 'jdf@safecity.com', password: 'DefaultJDF123', role: 'law-enforcement', department: 'JDF', firstLogin: true },
+            { email: 'jcf@safecity.com', password: 'DefaultJCF123', role: 'law-enforcement', department: 'JCF', firstLogin: true },
+            { email: 'security@safecity.com', password: 'DefaultNS123', role: 'law-enforcement', department: 'National Security', firstLogin: true }
+        ];
+
+        function togglePassword() {
+            const passwordInput = document.getElementById('password');
+            const eyeIcon = document.getElementById('eyeIcon');
+            
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                
+            } else {
+                passwordInput.type = 'password';
+                
+            }
+        }
+
+        function toggleNewPassword() {
+            const passwordInput = document.getElementById('newPassword');
+            const eyeIcon = document.getElementById('eyeIcon1');
+            
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                
+            } else {
+                passwordInput.type = 'password';
+                
+            }
+        }
+
+        function toggleConfirmPassword() {
+            const passwordInput = document.getElementById('confirmPassword');
+            const eyeIcon = document.getElementById('eyeIcon2');
+            
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                
+            } else {
+                passwordInput.type = 'password';
+                
+            }
+        }
+
+        document.getElementById('adminLoginForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            
+            // Find matching account
+            const account = testAccounts.find(acc => acc.email === email && acc.password === password);
+            
+            if (account) {
+                // Store user data
+                localStorage.setItem('userType', account.role);
+                localStorage.setItem('userEmail', email);
+                localStorage.setItem('userDepartment', account.department || 'admin');
+                
+                // Check if first login
+                if (account.firstLogin) {
+                    // Show password change modal
+                    showPasswordChangeModal();
+                } else {
+                    // Redirect to appropriate dashboard
+                    if (account.role === 'admin') {
+                        window.location.href = 'admin-dashboard.html';
+                    } else {
+                        window.location.href = 'law-enforcement-dashboard.html';
+                    }
+                }
+            } else {
+                alert('Invalid email or password');
+            }
+        });
+
+        function showPasswordChangeModal() {
+            document.getElementById('changePasswordModal').style.display = 'flex';
+        }
+
+        document.getElementById('changePasswordForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const newPassword = document.getElementById('newPassword').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            const errorDiv = document.getElementById('passwordError');
+            
+            // Validate passwords match
+            if (newPassword !== confirmPassword) {
+                errorDiv.textContent = 'Passwords do not match!';
+                errorDiv.style.display = 'block';
+                return;
+            }
+            
+            // Validate password strength
+            if (newPassword.length < 8) {
+                errorDiv.textContent = 'Password must be at least 8 characters long!';
+                errorDiv.style.display = 'block';
+                return;
+            }
+            
+            // Check for at least one number and one special character
+            const hasNumber = /\d/.test(newPassword);
+            const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(newPassword);
+            
+            if (!hasNumber || !hasSpecial) {
+                errorDiv.textContent = 'Password must contain at least one number and one special character!';
+                errorDiv.style.display = 'block';
+                return;
+            }
+            
+            // Password is valid
+            errorDiv.style.display = 'none';
+            
+            // Update password in localStorage (in production, this would be an API call)
+            const email = localStorage.getItem('userEmail');
+            const userType = localStorage.getItem('userType');
+            
+            // Mark as no longer first login
+            localStorage.setItem('passwordChanged', 'true');
+            
+            alert('Password changed successfully!');
+            
+            // Redirect to appropriate dashboard
+            if (userType === 'admin') {
+                window.location.href = 'admin-dashboard.html';
+            } else {
+                window.location.href = 'law-enforcement-dashboard.html';
+            }
+        });
+    </script>
+</body>
