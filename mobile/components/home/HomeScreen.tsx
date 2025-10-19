@@ -15,12 +15,16 @@ interface HomeScreenProps {
   userType: 'anonymous' | 'user' | null;
   onReport: () => void;
   onLogout: () => void;
+  onProfile: () => void;
+  onMyReports: () => void;
 }
 
 const HomeScreen: React.FC<HomeScreenProps> = ({
   userType,
   onReport,
   onLogout,
+  onProfile,
+  onMyReports,
 }) => {
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -90,12 +94,24 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
             </View>
 
             <View style={styles.menuItems}>
-              <TouchableOpacity style={styles.menuItem}>
+              <TouchableOpacity 
+                style={styles.menuItem}
+                onPress={() => {
+                  setMenuOpen(false);
+                  onProfile();
+                }}
+              >
                 <Ionicons name="person-outline" size={20} color={Colors.primary} />
                 <Text style={styles.menuItemText}>Profile</Text>
               </TouchableOpacity>
 
-              <TouchableOpacity style={styles.menuItem}>
+              <TouchableOpacity 
+                style={styles.menuItem}
+                onPress={() => {
+                  setMenuOpen(false);
+                  onMyReports();
+                }}
+              >
                 <Ionicons name="document-text-outline" size={20} color={Colors.primary} />
                 <Text style={styles.menuItemText}>My Reports</Text>
               </TouchableOpacity>

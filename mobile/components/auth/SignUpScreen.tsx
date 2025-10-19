@@ -9,10 +9,11 @@ import {
     View,
 } from 'react-native';
 import { Colors } from '../../constants/colors';
+import { useUserProfile } from '../../components/profile/UserProfileContext';
 
 interface SignUpScreenProps {
   onBack: () => void;
-  onSignUp: () => void;
+  onSignUp: (userData: { fullName: string; email: string; phone: string }) => void;
 }
 
 const SignUpScreen: React.FC<SignUpScreenProps> = ({ onBack, onSignUp }) => {
@@ -103,7 +104,10 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({ onBack, onSignUp }) => {
           </View>
 
           {/* Create Account Button */}
-          <TouchableOpacity style={styles.createButton} onPress={onSignUp}>
+          <TouchableOpacity 
+            style={styles.createButton} 
+            onPress={() => onSignUp({ fullName, email, phone })}
+          >
             <Text style={styles.createButtonText}>Create Account</Text>
           </TouchableOpacity>
         </View>

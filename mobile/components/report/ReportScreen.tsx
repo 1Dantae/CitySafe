@@ -1,13 +1,18 @@
 import { Ionicons } from '@expo/vector-icons';
 import {
   launchCameraAsync,
+  launchImageLibraryAsync,
+  MediaTypeOptions,
   PermissionStatus,
   useCameraPermissions,
+  useMediaLibraryPermissions,
 } from 'expo-image-picker';
+import { format } from 'date-fns';
 import React, { useState } from 'react';
 import {
   Alert,
   Image,
+  Platform,
   ScrollView,
   StyleSheet,
   Switch,
@@ -16,7 +21,9 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { Colors } from '../../constants/colors';
+import { useUserProfile } from '../profile/UserProfileContext';
 
 interface ReportScreenProps {
   onBack: () => void;
@@ -36,6 +43,7 @@ const incidentTypes = [
 ];
 
 const ReportScreen: React.FC<ReportScreenProps> = ({ onBack }) => {
+  const { addReport } = useUserProfile();
   const [formData, setFormData] = useState({
     incidentType: '',
     date: '',
@@ -51,7 +59,14 @@ const ReportScreen: React.FC<ReportScreenProps> = ({ onBack }) => {
 
   const [showTypePicker, setShowTypePicker] = useState(false);
   const [pickedImage, setPickedImage] = useState<string | null>(null);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showTimePicker, setShowTimePicker] = useState(false);
+  const [addressSuggestions, setAddressSuggestions] = useState<string[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [showCustomIncidentInput, setShowCustomIncidentInput] = useState(false);
+  const [customIncident, setCustomIncident] = useState('');
   const [cameraPermissionInformation, requestPermission] = useCameraPermissions();
+  const [mediaPermissionInformation, requestMediaPermission] = useMediaLibraryPermissions();
 
   async function verifyPermissions() {
     if (cameraPermissionInformation?.status === PermissionStatus.UNDETERMINED) {
@@ -70,26 +85,186 @@ const ReportScreen: React.FC<ReportScreenProps> = ({ onBack }) => {
     return true;
   }
 
-  async function takeImageHandler() {
+  async function verifyMediaPermissions() {
+    if (mediaPermissionInformation?.status === PermissionStatus.UNDETERMINED) {
+      const permissionResponse = await requestMediaPermission();
+      return permissionResponse.granted;
+    }
+
+    if (mediaPermissionInformation?.status === PermissionStatus.DENIED) {
+      Alert.alert(
+        'Insufficient Permissions!',
+        'You need to grant media library access to use this feature.'
+      );
+      return false;
+    }
+
+    return true;
+  }
+
+  async function takeImageOrVideoHandler() {
     const hasPermission = await verifyPermissions();
     if (!hasPermission) return;
 
-    const image = await launchCameraAsync({
+    const result = await launchCameraAsync({
+      mediaTypes: MediaTypeOptions.All,  // Allow both images and videos
       allowsEditing: true,
       aspect: [16, 9],
       quality: 0.5,
     });
 
-    if (!image.canceled) {
-      setPickedImage(image.assets[0].uri);
+    if (!result.canceled) {
+      setPickedImage(result.assets[0].uri);
     }
   }
+
+  async function chooseFromLibrary() {
+    const hasPermission = await verifyMediaPermissions();
+    if (!hasPermission) return;
+
+    const result = await launchImageLibraryAsync({
+      mediaTypes: MediaTypeOptions.All, // Allow both images and videos
+      allowsEditing: true,
+      aspect: [16, 9],
+      quality: 0.5,
+    });
+
+    if (!result.canceled) {
+      setPickedImage(result.assets[0].uri);
+    }
+  }
+
+  // Mock function for address suggestions - in a real app, this would call an API
+  const getAddressSuggestions = (input: string) => {
+    // This is a mock implementation - in a real app, this would call an API like Google Places
+    const jamaicaLocations = [
+      "Kingston, Jamaica",
+      "Montego Bay, Jamaica",
+      "Ocho Rios, Jamaica",
+      "Portmore, Jamaica", 
+      "Spanish Town, Jamaica",
+      "New Kingston, Jamaica",
+      "Half Way Tree, Jamaica",
+      "Mandeville, Jamaica",
+      "St. Ann's Bay, Jamaica",
+      "Falmouth, Jamaica",
+      "Runaway Bay, Jamaica",
+      "Negril, Jamaica",
+      "Black River, Jamaica",
+      "Port Antonio, Jamaica",
+      "Mona Commons, Kingston",
+      "Papine, Kingston",
+      "Constant Spring, Kingston",
+      "Liguanea, Kingston",
+      "Cross Roads, Kingston",
+      "Half Way Tree, St. Andrew"
+    ];
+    
+    // Filter locations based on user input
+    return jamaicaLocations.filter(location => 
+      location.toLowerCase().includes(input.toLowerCase())
+    ).slice(0, 5); // Return top 5 matches
+  };
+
+  const handleAddressChange = (text: string) => {
+    setFormData({ ...formData, location: text });
+    
+    // If the user has entered at least 2 characters, show suggestions
+    if (text.length >= 2) {
+      const suggestions = getAddressSuggestions(text);
+      setAddressSuggestions(suggestions);
+      setShowSuggestions(true);
+    } else {
+      setShowSuggestions(false);
+    }
+  };
+
+  const selectAddressSuggestion = (suggestion: string) => {
+    setFormData({ ...formData, location: suggestion });
+    setShowSuggestions(false);
+  };
+
+  const handleDateChange = (event: any, selectedDate?: Date) => {
+    setShowDatePicker(false);
+    if (selectedDate) {
+      const formattedDate = format(selectedDate, 'MMM dd, yyyy'); // e.g., "Oct 18, 2025"
+      setFormData({ ...formData, date: formattedDate });
+    }
+  };
+
+  const parseTimeToDateTime = (timeString: string): Date => {
+    if (!timeString) return new Date();
+    
+    // Check if time is in 12-hour format (e.g., "10:30 AM")
+    if (timeString.includes('AM') || timeString.includes('PM')) {
+      const [time, period] = timeString.split(' ');
+      const [hours, minutes] = time.split(':').map(Number);
+      
+      let hour = hours;
+      if (period === 'PM' && hour !== 12) {
+        hour += 12;
+      } else if (period === 'AM' && hour === 12) {
+        hour = 0;
+      }
+      
+      const date = new Date();
+      date.setHours(hour, minutes, 0, 0);
+      return date;
+    } else {
+      // If in 24-hour format, parse as before
+      const [hours, minutes] = timeString.split(':').map(Number);
+      const date = new Date();
+      date.setHours(hours, minutes, 0, 0);
+      return date;
+    }
+  };
+
+  const handleTimeChange = (event: any, selectedTime?: Date) => {
+    setShowTimePicker(false);
+    if (selectedTime) {
+      // Convert to 12-hour format
+      let hours = selectedTime.getHours();
+      const minutes = selectedTime.getMinutes().toString().padStart(2, '0');
+      const ampm = hours >= 12 ? 'PM' : 'AM';
+      
+      hours = hours % 12;
+      hours = hours ? hours : 12; // the hour '0' should be '12'
+      const formattedHours = hours.toString().padStart(2, '0');
+      
+      const formattedTime = `${formattedHours}:${minutes} ${ampm}`;
+      setFormData({ ...formData, time: formattedTime });
+    }
+  };
 
   const handleSubmit = () => {
     if (!formData.incidentType || !formData.location || !formData.description) {
       Alert.alert('Error', 'Please fill in all required fields');
       return;
     }
+
+    // Create a report object to add to the user's profile
+    const reportDate = formData.date ? new Date(formData.date.split('/').reverse().join('/')) : new Date();
+    const formattedDate = reportDate.toLocaleDateString('en-US', { 
+      year: 'numeric', 
+      month: 'short', 
+      day: 'numeric' 
+    });
+    
+    const reportTitle = formData.incidentType === 'Other' && customIncident 
+      ? customIncident 
+      : formData.incidentType;
+    
+    const newReport = {
+      id: Date.now().toString(), // In a real app, this would be from the backend
+      title: reportTitle,
+      description: formData.description,
+      location: formData.location,
+      date: formattedDate,
+      status: 'pending' as const,
+    };
+
+    // Add the report to the user's profile
+    addReport(newReport);
 
     Alert.alert('Success', 'Report submitted successfully!', [
       { text: 'OK', onPress: onBack },
@@ -121,10 +296,28 @@ const ReportScreen: React.FC<ReportScreenProps> = ({ onBack }) => {
             <Ionicons name="warning" size={24} color={Colors.white} />
           </View>
           <Text style={styles.fieldText}>
-            {formData.incidentType || 'Type of Incident*'}
+            {formData.incidentType === 'Other' && customIncident 
+              ? customIncident 
+              : formData.incidentType || 'Type of Incident*'}
           </Text>
           <Ionicons name="chevron-down" size={20} color={Colors.primary} />
         </TouchableOpacity>
+
+        {/* Custom Incident Input - shown when 'Other' is selected */}
+        {showCustomIncidentInput && (
+          <View style={styles.fieldCard}>
+            <View style={styles.iconContainer}>
+              <Ionicons name="document" size={24} color={Colors.white} />
+            </View>
+            <TextInput
+              style={styles.fieldInput}
+              placeholder="Enter type of incident"
+              value={customIncident}
+              onChangeText={setCustomIncident}
+              placeholderTextColor={Colors.textLight}
+            />
+          </View>
+        )}
 
         {showTypePicker && (
           <View style={styles.pickerContainer}>
@@ -133,7 +326,14 @@ const ReportScreen: React.FC<ReportScreenProps> = ({ onBack }) => {
                 key={type}
                 style={styles.pickerItem}
                 onPress={() => {
-                  setFormData({ ...formData, incidentType: type });
+                  if (type === 'Other') {
+                    setFormData({ ...formData, incidentType: type });
+                    setShowCustomIncidentInput(true);
+                  } else {
+                    setFormData({ ...formData, incidentType: type });
+                    setShowCustomIncidentInput(false);
+                    setCustomIncident('');
+                  }
                   setShowTypePicker(false);
                 }}
               >
@@ -144,32 +344,69 @@ const ReportScreen: React.FC<ReportScreenProps> = ({ onBack }) => {
         )}
 
         {/* Date */}
-        <View style={styles.fieldCard}>
+        <TouchableOpacity
+          style={styles.fieldCard}
+          onPress={() => setShowDatePicker(true)}
+        >
           <View style={styles.iconContainer}>
             <Ionicons name="calendar" size={24} color={Colors.white} />
           </View>
-          <TextInput
-            style={styles.fieldInput}
-            placeholder="Date (MM/DD/YYYY)*"
-            value={formData.date}
-            onChangeText={(text) => setFormData({ ...formData, date: text })}
-            placeholderTextColor={Colors.textLight}
-          />
-        </View>
+          <Text style={styles.fieldText}>
+            {formData.date || 'Date of Incident*'}
+          </Text>
+          <Ionicons name="calendar-outline" size={20} color={Colors.primary} />
+        </TouchableOpacity>
+
+        {/* Date Picker Modal */}
+        {showDatePicker && (
+          <View style={styles.pickerModal}>
+            <View style={styles.pickerHeader}>
+              <Text style={styles.pickerHeaderTitle}>Select Date</Text>
+              <TouchableOpacity onPress={() => setShowDatePicker(false)}>
+                <Ionicons name="close" size={24} color={Colors.primary} />
+              </TouchableOpacity>
+            </View>
+            <DateTimePicker
+              value={formData.date ? new Date(Date.parse(formData.date)) : new Date()}
+              mode="date"
+              display="default"
+              onChange={handleDateChange}
+            />
+          </View>
+        )}
 
         {/* Time */}
-        <View style={styles.fieldCard}>
+        <TouchableOpacity
+          style={styles.fieldCard}
+          onPress={() => setShowTimePicker(true)}
+        >
           <View style={styles.iconContainer}>
             <Ionicons name="time" size={24} color={Colors.white} />
           </View>
-          <TextInput
-            style={styles.fieldInput}
-            placeholder="Time (HH:MM)*"
-            value={formData.time}
-            onChangeText={(text) => setFormData({ ...formData, time: text })}
-            placeholderTextColor={Colors.textLight}
-          />
-        </View>
+          <Text style={styles.fieldText}>
+            {formData.time || 'Time of Incident*'}
+          </Text>
+          <Ionicons name="time-outline" size={20} color={Colors.primary} />
+        </TouchableOpacity>
+
+        {/* Time Picker Modal */}
+        {showTimePicker && (
+          <View style={styles.pickerModal}>
+            <View style={styles.pickerHeader}>
+              <Text style={styles.pickerHeaderTitle}>Select Time</Text>
+              <TouchableOpacity onPress={() => setShowTimePicker(false)}>
+                <Ionicons name="close" size={24} color={Colors.primary} />
+              </TouchableOpacity>
+            </View>
+            <DateTimePicker
+              value={formData.time ? parseTimeToDateTime(formData.time) : new Date()}
+              mode="time"
+              display="default"
+              onChange={handleTimeChange}
+              is24Hour={false}  // This ensures 12-hour format on iOS
+            />
+          </View>
+        )}
 
         {/* Location */}
         <View style={styles.fieldCard}>
@@ -180,24 +417,29 @@ const ReportScreen: React.FC<ReportScreenProps> = ({ onBack }) => {
             style={styles.fieldInput}
             placeholder="Location of Incident*"
             value={formData.location}
-            onChangeText={(text) => setFormData({ ...formData, location: text })}
+            onChangeText={handleAddressChange}
             placeholderTextColor={Colors.textLight}
           />
+          <Ionicons name="location-outline" size={20} color={Colors.primary} />
         </View>
 
-        {/* Witnesses */}
-        <View style={styles.fieldCard}>
-          <View style={styles.iconContainer}>
-            <Ionicons name="people" size={24} color={Colors.white} />
+        {/* Address Suggestions */}
+        {showSuggestions && addressSuggestions.length > 0 && (
+          <View style={styles.suggestionsContainer}>
+            {addressSuggestions.map((suggestion, index) => (
+              <TouchableOpacity
+                key={index}
+                style={styles.suggestionItem}
+                onPress={() => selectAddressSuggestion(suggestion)}
+              >
+                <Ionicons name="location-outline" size={16} color={Colors.primary} style={styles.suggestionIcon} />
+                <Text style={styles.suggestionText}>{suggestion}</Text>
+              </TouchableOpacity>
+            ))}
           </View>
-          <TextInput
-            style={styles.fieldInput}
-            placeholder="Witness(es) of Incident"
-            value={formData.witnesses}
-            onChangeText={(text) => setFormData({ ...formData, witnesses: text })}
-            placeholderTextColor={Colors.textLight}
-          />
-        </View>
+        )}
+
+
 
         {/* Description */}
         <View style={[styles.fieldCard, styles.descriptionCard]}>
@@ -219,18 +461,32 @@ const ReportScreen: React.FC<ReportScreenProps> = ({ onBack }) => {
         </View>
 
         {/* Photo/Video Upload */}
-        <View style={styles.fieldCard}>
+        <View style={[styles.fieldCard, styles.photoCard]}>
           <View style={styles.iconContainer}>
             <Ionicons name="camera" size={24} color={Colors.white} />
           </View>
-          <TouchableOpacity style={{ flex: 1 }} onPress={takeImageHandler}>
-            <Text style={styles.fieldText}>Take Photo / Video</Text>
-          </TouchableOpacity>
-          <Ionicons name="image" size={20} color={Colors.primary} />
+          <View style={{ flex: 1 }}>
+            <TouchableOpacity onPress={takeImageOrVideoHandler} style={styles.photoButton}>
+              <Ionicons name="camera-outline" size={20} color={Colors.primary} />
+              <Text style={styles.photoButtonText}>Take Photo/Video</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={chooseFromLibrary} style={styles.photoButton}>
+              <Ionicons name="images-outline" size={20} color={Colors.primary} />
+              <Text style={styles.photoButtonText}>Choose from Library</Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
         {pickedImage && (
-          <Image source={{ uri: pickedImage }} style={{ width: '100%', height: 200, borderRadius: 12, marginBottom: 16 }} />
+          <View style={styles.imagePreviewContainer}>
+            <Image source={{ uri: pickedImage }} style={styles.imagePreview} />
+            <TouchableOpacity 
+              style={styles.removeImageButton}
+              onPress={() => setPickedImage(null)}
+            >
+              <Ionicons name="close-circle" size={24} color={Colors.emergency} />
+            </TouchableOpacity>
+          </View>
         )}
 
         {/* Anonymous Toggle */}
@@ -416,6 +672,92 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     marginLeft: 12,
+  },
+  suggestionsContainer: {
+    backgroundColor: Colors.white,
+    borderRadius: 8,
+    maxHeight: 150,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+    zIndex: 10,
+  },
+  suggestionItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.background,
+  },
+  suggestionIcon: {
+    marginRight: 12,
+  },
+  suggestionText: {
+    fontSize: 16,
+    color: Colors.primary,
+  },
+  pickerModal: {
+    backgroundColor: Colors.white,
+    borderRadius: 16,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+    overflow: 'hidden',
+  },
+  pickerHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    backgroundColor: Colors.primary,
+  },
+  pickerHeaderTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: Colors.white,
+  },
+  photoCard: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  photoButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    marginVertical: 4,
+    backgroundColor: Colors.accent,
+    borderRadius: 20,
+    marginRight: 8,
+  },
+  photoButtonText: {
+    color: Colors.primary,
+    fontSize: 14,
+    fontWeight: '500',
+    marginLeft: 8,
+  },
+  imagePreviewContainer: {
+    position: 'relative',
+    marginBottom: 16,
+  },
+  imagePreview: {
+    width: '100%',
+    height: 200,
+    borderRadius: 12,
+  },
+  removeImageButton: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    backgroundColor: Colors.white,
+    borderRadius: 12,
+    padding: 4,
   },
 });
 

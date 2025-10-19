@@ -42,11 +42,10 @@
       [
         "expo-image-picker",
         {
-          "photoPermission": "The app needs access to your photos in order for you to uploages images",
-           "cameraPermission": "The app needs access to your photos in order for you to take photo",
-           //"microphonePermission": "The app needs access to your photos in order for you to uploages videos"
+          "photosPermission": "The app needs access to your photos to upload images",
+          "cameraPermission": "The app needs access to your camera to take photos",
+          "microphonePermission": "The app needs access to your microphone to record videos"
         }
-
       ]
     ],
     "experiments": {
