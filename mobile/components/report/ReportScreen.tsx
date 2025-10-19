@@ -21,6 +21,7 @@ import {
   View,
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { Video, ResizeMode } from 'expo-av';
 import { Colors } from '../../constants/colors';
 import { useUserProfile } from '../profile/UserProfileContext';
 import { submitReport, getReportById } from '../../services/api';
@@ -585,7 +586,17 @@ const ReportScreen: React.FC<ReportScreenProps> = ({ onBack }) => {
 
         {pickedImage && (
           <View style={styles.imagePreviewContainer}>
-            <Image source={{ uri: pickedImage }} style={styles.imagePreview} />
+            {isVideoFile(pickedImage) ? (
+              <Video
+                source={{ uri: pickedImage }}
+                style={styles.imagePreview}
+                useNativeControls
+                resizeMode={ResizeMode.CONTAIN}
+                isLooping={false}
+              />
+            ) : (
+              <Image source={{ uri: pickedImage }} style={styles.imagePreview} />
+            )}
             <TouchableOpacity 
               style={styles.removeImageButton}
               onPress={() => setPickedImage(null)}

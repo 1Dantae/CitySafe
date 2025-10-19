@@ -2,14 +2,23 @@ import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from 'react';
 import {
     Linking,
-    ScrollView,
     StyleSheet,
     Text,
     TouchableOpacity,
     View,
+    Dimensions,
 } from 'react-native';
 import { Colors } from '../../constants/colors';
 import MapView from './MapView';
+import { useNotification } from '../notifications/NotificationContext';
+
+// Scaling function based on screen dimensions
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+const scale = SCREEN_WIDTH / 375; // 375 is the base width for iPhone
+const verticalScale = SCREEN_HEIGHT / 812; // 812 is the base height for iPhone X
+
+const scaleSize = (size: number) => Math.ceil(size * scale);
+const scaleVertical = (size: number) => Math.ceil(size * verticalScale);
 
 interface HomeScreenProps {
   userType: 'anonymous' | 'user' | null;
@@ -17,6 +26,8 @@ interface HomeScreenProps {
   onLogout: () => void;
   onProfile: () => void;
   onMyReports: () => void;
+  onChat: () => void;
+  onNotifications: () => void;
 }
 
 const HomeScreen: React.FC<HomeScreenProps> = ({
@@ -25,8 +36,11 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
   onLogout,
   onProfile,
   onMyReports,
+  onChat,
+  onNotifications,
 }) => {
   const [menuOpen, setMenuOpen] = useState(false);
+  const { unreadCount } = useNotification();
 
   const handleEmergencyCall = () => {
     Linking.openURL('tel:911');
@@ -43,8 +57,13 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
           </Text>
         </View>
         <View style={styles.headerIcons}>
-          <TouchableOpacity style={styles.iconButton}>
+          <TouchableOpacity style={styles.iconButton} onPress={onNotifications}>
             <Ionicons name="notifications-outline" size={24} color={Colors.white} />
+            {unreadCount > 0 && (
+              <View style={styles.notificationBadge}>
+                <Text style={styles.notificationBadgeText}>{unreadCount}</Text>
+              </View>
+            )}
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.iconButton}
@@ -56,16 +75,25 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
       </View>
 
       {/* Content */}
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+      <View style={styles.content}>
         {/* Map View */}
-        <MapView userType={userType} />
+        <View style={styles.mapContainer}>
+          <MapView userType={userType} />
+        </View>
 
         {/* Action Buttons */}
         <View style={styles.actionButtons}>
-          <TouchableOpacity style={styles.reportButton} onPress={onReport}>
-            <Ionicons name="document-text" size={24} color={Colors.white} />
-            <Text style={styles.reportButtonText}>Report an Incident</Text>
-          </TouchableOpacity>
+          <View style={styles.buttonRow}>
+            <TouchableOpacity style={[styles.reportButton, styles.halfButton]} onPress={onReport}>
+              <Ionicons name="document-text" size={24} color={Colors.white} />
+              <Text style={styles.reportButtonText}>Report</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={[styles.chatButton, styles.halfButton]} onPress={onChat}>
+              <Ionicons name="chatbubble-ellipses-outline" size={24} color={Colors.white} />
+              <Text style={styles.chatButtonText}>Chat</Text>
+            </TouchableOpacity>
+          </View>
 
           <TouchableOpacity
             style={styles.emergencyButton}
@@ -75,7 +103,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
             <Text style={styles.emergencyButtonText}>Emergency Call 911</Text>
           </TouchableOpacity>
         </View>
-      </ScrollView>
+      </View>
 
       {/* Side Menu */}
       {menuOpen && (
@@ -116,7 +144,13 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
                 <Text style={styles.menuItemText}>My Reports</Text>
               </TouchableOpacity>
 
-              <TouchableOpacity style={styles.menuItem}>
+              <TouchableOpacity 
+                style={styles.menuItem}
+                onPress={() => {
+                  setMenuOpen(false);
+                  onNotifications();
+                }}
+              >
                 <Ionicons name="notifications-outline" size={20} color={Colors.primary} />
                 <Text style={styles.menuItemText}>Notifications</Text>
               </TouchableOpacity>
@@ -148,81 +182,86 @@ const styles = StyleSheet.create({
   },
   header: {
     backgroundColor: Colors.primary,
-    paddingTop: 60,
-    paddingBottom: 24,
-    paddingHorizontal: 24,
+    paddingTop: scaleVertical(30),
+    paddingBottom: scaleVertical(16),
+    paddingHorizontal: scaleSize(24),
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: scaleVertical(2) },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
+    shadowRadius: scaleSize(4),
     elevation: 4,
   },
   headerTitle: {
-    fontSize: 28,
+    fontSize: scaleSize(24),
     fontWeight: 'bold',
     color: Colors.white,
   },
   headerSubtitle: {
-    fontSize: 14,
+    fontSize: scaleSize(12),
     color: Colors.white,
     opacity: 0.75,
-    marginTop: 4,
+    marginTop: scaleVertical(2),
   },
   headerIcons: {
     flexDirection: 'row',
-    gap: 16,
+    gap: scaleSize(16),
   },
   iconButton: {
-    padding: 4,
+    padding: scaleSize(4),
   },
   content: {
     flex: 1,
   },
+  mapContainer: {
+    flex: 1,
+    margin: scaleSize(16),
+    marginTop: scaleVertical(8),
+  },
   actionButtons: {
-    paddingHorizontal: 24,
-    paddingVertical: 24,
+    paddingHorizontal: scaleSize(24),
+    paddingVertical: scaleVertical(16),
+    marginTop: scaleVertical(8),
   },
   reportButton: {
     backgroundColor: Colors.primary,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 20,
-    borderRadius: 30,
-    marginBottom: 16,
+    paddingVertical: scaleVertical(18),
+    borderRadius: scaleSize(30),
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: { width: 0, height: scaleVertical(4) },
     shadowOpacity: 0.3,
-    shadowRadius: 8,
+    shadowRadius: scaleSize(8),
     elevation: 8,
   },
   reportButtonText: {
     color: Colors.white,
-    fontSize: 18,
+    fontSize: scaleSize(16),
     fontWeight: '600',
-    marginLeft: 12,
+    marginLeft: scaleSize(12),
   },
   emergencyButton: {
     backgroundColor: Colors.emergency,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 20,
-    borderRadius: 30,
+    paddingVertical: scaleVertical(18),
+    borderRadius: scaleSize(30),
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: { width: 0, height: scaleVertical(4) },
     shadowOpacity: 0.3,
-    shadowRadius: 8,
+    shadowRadius: scaleSize(8),
     elevation: 8,
   },
   emergencyButtonText: {
     color: Colors.white,
-    fontSize: 18,
+    fontSize: scaleSize(16),
     fontWeight: '600',
-    marginLeft: 12,
+    marginLeft: scaleSize(12),
   },
   menuOverlay: {
     position: 'absolute',
@@ -245,42 +284,87 @@ const styles = StyleSheet.create({
     right: 0,
     top: 0,
     bottom: 0,
-    width: 280,
+    width: scaleSize(280),
     backgroundColor: Colors.white,
     shadowColor: '#000',
-    shadowOffset: { width: -2, height: 0 },
+    shadowOffset: { width: -scaleSize(2), height: 0 },
     shadowOpacity: 0.3,
-    shadowRadius: 8,
+    shadowRadius: scaleSize(8),
     elevation: 16,
   },
   menuHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 24,
-    paddingTop: 60,
-    paddingBottom: 24,
+    paddingHorizontal: scaleSize(24),
+    paddingTop: scaleVertical(60),
+    paddingBottom: scaleVertical(24),
     borderBottomWidth: 1,
     borderBottomColor: Colors.gray,
   },
   menuTitle: {
-    fontSize: 24,
+    fontSize: scaleSize(24),
     fontWeight: 'bold',
     color: Colors.primary,
   },
   menuItems: {
-    paddingTop: 16,
+    paddingTop: scaleVertical(16),
   },
   menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 24,
-    paddingVertical: 16,
+    paddingHorizontal: scaleSize(24),
+    paddingVertical: scaleVertical(16),
   },
   menuItemText: {
-    fontSize: 16,
+    fontSize: scaleSize(16),
     color: Colors.primary,
-    marginLeft: 12,
+    marginLeft: scaleSize(12),
+  },
+  chatButton: {
+    backgroundColor: Colors.accent,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: scaleVertical(18),
+    borderRadius: scaleSize(30),
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: scaleVertical(4) },
+    shadowOpacity: 0.3,
+    shadowRadius: scaleSize(8),
+    elevation: 8,
+  },
+  chatButtonText: {
+    color: Colors.white,
+    fontSize: scaleSize(16),
+    fontWeight: '600',
+    marginLeft: scaleSize(12),
+  },
+  buttonRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: scaleVertical(24),
+  },
+  halfButton: {
+    flex: 1,
+    marginHorizontal: scaleSize(4),
+  },
+  notificationBadge: {
+    position: 'absolute',
+    top: -5,
+    right: -5,
+    backgroundColor: Colors.emergency,
+    borderRadius: 10,
+    minWidth: 20,
+    height: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 4,
+  },
+  notificationBadgeText: {
+    color: Colors.white,
+    fontSize: scaleSize(10),
+    fontWeight: 'bold',
   },
 });
 

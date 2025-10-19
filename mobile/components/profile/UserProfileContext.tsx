@@ -13,6 +13,14 @@ interface Report {
   description: string;
   location: string;
   date: string;
+  time: string;
+  incidentType: string;
+  witnesses: string;
+  anonymous: boolean;
+  name?: string;
+  phone?: string;
+  email?: string;
+  mediaUri?: string | null; // For photo/video
   status: 'pending' | 'in-progress' | 'resolved';
   media_url?: string;
 }

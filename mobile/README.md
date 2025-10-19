@@ -1,6 +1,6 @@
-# Welcome to your Expo app 👋
+# Welcome to CitySafe Mobile App 👋
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app). CitySafe is a safety application that allows users to report incidents and get safety information. The app features an AI assistant powered by Google's Gemini AI for providing safety recommendations and route guidance.
 
 ## Get started
 
@@ -10,7 +10,13 @@ This is an [Expo](https://expo.dev) project created with [`create-expo-app`](htt
    npm install
    ```
 
-2. Start the app
+2. Set up environment variables
+   Create a `.env` file in the root directory with your Gemini AI API key:
+   ```
+   EXPO_PUBLIC_GEMINI_API_KEY=your_gemini_api_key_here
+   ```
+
+3. Start the app
 
    ```bash
    npx expo start
