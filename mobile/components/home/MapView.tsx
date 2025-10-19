@@ -171,8 +171,8 @@ const CustomMapView: React.FC<MapViewProps> = ({ userType }) => {
                 latitude: report.location.coordinates[1],
                 longitude: report.location.coordinates[0],
               }}
-              title={report.incidentType}
-              description={report.description}
+              title={report.incidentType || 'Incident'}
+              description={report.description || 'No description'}
               pinColor="red"
             />
           );

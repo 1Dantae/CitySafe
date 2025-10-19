@@ -13,13 +13,11 @@ import { Colors } from '../../constants/colors';
 interface LoginScreenProps {
   onBack: () => void;
   onLogin: (email: string, password: string) => void;
-  onAdminLogin: () => void;
 }
 
 const LoginScreen: React.FC<LoginScreenProps> = ({
   onBack,
   onLogin,
-  onAdminLogin,
 }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState('');
@@ -118,15 +116,10 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
           </TouchableOpacity>
 
           {/* Forgot Password */}
-          <TouchableOpacity style={styles.forgotPassword} disabled={isLoading}>
+          <TouchableOpacity style={styles.forgotPassword}>
             <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
           </TouchableOpacity>
         </View>
-
-        {/* Admin Login Link */}
-        <TouchableOpacity style={styles.adminLink} onPress={onAdminLogin} disabled={isLoading}>
-          <Text style={styles.adminLinkText}>Admin Login</Text>
-        </TouchableOpacity>
       </ScrollView>
     </View>
   );
@@ -219,16 +212,6 @@ const styles = StyleSheet.create({
   forgotPasswordText: {
     color: Colors.primary,
     fontSize: 14,
-  },
-  adminLink: {
-    marginTop: 32,
-    marginBottom: 32,
-    alignItems: 'center',
-  },
-  adminLinkText: {
-    color: Colors.primary,
-    fontSize: 14,
-    textDecorationLine: 'underline',
   },
 });
 

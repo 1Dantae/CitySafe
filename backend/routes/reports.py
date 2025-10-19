@@ -54,7 +54,7 @@ ALLOWED_FILE_TYPES = {
 MAX_FILE_SIZE = 10 * 1024 * 1024
 
 
-@router.post("/")
+@router.post("")
 async def create_report(
     report_data: ReportData = Depends(),
     media: UploadFile = File(None)
@@ -65,8 +65,6 @@ async def create_report(
 
     doc = {
         'incidentType': report_data.incident_type,
-        'date': report_data.date,
-        'time': report_data.time,
         'description': report_data.description,
         'anonymous': report_data.anonymous,
         'name': report_data.name,
@@ -106,7 +104,7 @@ async def create_report(
             raise HTTPException(status_code=500, detail=f'Error processing media file: {str(e)}')
 
     result = db.db.reports.insert_one(doc)
-    return {'id': str(result.inserted_id)}
+    return {"id": str(result.inserted_id)}
 
 
 @router.get("/")

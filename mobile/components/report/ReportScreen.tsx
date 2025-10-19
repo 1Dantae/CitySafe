@@ -57,7 +57,12 @@ const ReportScreen: React.FC<ReportScreenProps> = ({ onBack }) => {
     name: user?.fullName || '', // Pre-fill with user's name if authenticated
     phone: user?.phone || '',   // Pre-fill with user's phone if authenticated
     email: user?.email || '',   // Pre-fill with user's email if authenticated
+    customIncident: '',
   });
+
+  const handleInputChange = (field: keyof typeof formData, value: any) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
 
   const [showTypePicker, setShowTypePicker] = useState(false);
   const [pickedImage, setPickedImage] = useState<string | null>(null);
@@ -65,8 +70,7 @@ const ReportScreen: React.FC<ReportScreenProps> = ({ onBack }) => {
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [addressSuggestions, setAddressSuggestions] = useState<string[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
-  const [showCustomIncidentInput, setShowCustomIncidentInput] = useState(false);
-  const [customIncident, setCustomIncident] = useState('');
+  const showCustomIncidentInput = formData.incidentType === 'Other';
   const [cameraPermissionInformation, requestPermission] = useCameraPermissions();
   const [mediaPermissionInformation, requestMediaPermission] = useMediaLibraryPermissions();
   const [mapRegion, setMapRegion] = useState({
@@ -90,7 +94,7 @@ const ReportScreen: React.FC<ReportScreenProps> = ({ onBack }) => {
           longitudeDelta: 0.01,
         });
         setMarkerPosition({ latitude, longitude });
-        setFormData(prev => ({ ...prev, location: `${latitude}, ${longitude}` }));
+        handleInputChange('location', `${latitude}, ${longitude}`);
       }
     };
     getUserLocation();
@@ -98,7 +102,7 @@ const ReportScreen: React.FC<ReportScreenProps> = ({ onBack }) => {
 
   // Handle address change with potential geocoding
   const handleAddressChange = (text: string) => {
-    setFormData({ ...formData, location: text });
+    handleInputChange('location', text);
     
     // Clear suggestions if text is empty
     if (text.trim() === '') {
@@ -110,38 +114,36 @@ const ReportScreen: React.FC<ReportScreenProps> = ({ onBack }) => {
 
   // Select address from suggestions
   const selectAddressSuggestion = (suggestion: string) => {
-    setFormData({ ...formData, location: suggestion });
+    handleInputChange('location', suggestion);
     setAddressSuggestions([]);
     setShowSuggestions(false);
   };
 
-  async function verifyPermissions() {
-    if (cameraPermissionInformation?.status === PermissionStatus.UNDETERMINED) {
-      const permissionResponse = await requestPermission();
+  async function verifyAppPermissions(type: 'camera' | 'media'): Promise<boolean> {
+    const permissions = {
+      camera: {
+        info: cameraPermissionInformation,
+        request: requestPermission,
+        name: 'camera',
+      },
+      media: {
+        info: mediaPermissionInformation,
+        request: requestMediaPermission,
+        name: 'media library',
+      },
+    };
+
+    const permission = permissions[type];
+
+    if (permission.info?.status === PermissionStatus.UNDETERMINED) {
+      const permissionResponse = await permission.request();
       return permissionResponse.granted;
     }
 
-    if (cameraPermissionInformation?.status === PermissionStatus.DENIED) {
+    if (permission.info?.status === PermissionStatus.DENIED) {
       Alert.alert(
         'Insufficient Permissions!',
-        'You need to grant camera access to use this feature.'
-      );
-      return false;
-    }
-
-    return true;
-  }
-
-  async function verifyMediaPermissions() {
-    if (mediaPermissionInformation?.status === PermissionStatus.UNDETERMINED) {
-      const permissionResponse = await requestMediaPermission();
-      return permissionResponse.granted;
-    }
-
-    if (mediaPermissionInformation?.status === PermissionStatus.DENIED) {
-      Alert.alert(
-        'Insufficient Permissions!',
-        'You need to grant media library access to use this feature.'
+        `You need to grant ${permission.name} access to use this feature.`
       );
       return false;
     }
@@ -150,11 +152,11 @@ const ReportScreen: React.FC<ReportScreenProps> = ({ onBack }) => {
   }
 
   async function takeImageOrVideoHandler() {
-    const hasPermission = await verifyPermissions();
+    const hasPermission = await verifyAppPermissions('camera');
     if (!hasPermission) return;
 
     const result = await launchCameraAsync({
-      mediaTypes: MediaTypeOptions.All,  // Allow both images and videos
+      mediaTypes: MediaTypeOptions.All, // Allow both images and videos
       allowsEditing: true,
       aspect: [16, 9],
       quality: 0.5,
@@ -166,7 +168,7 @@ const ReportScreen: React.FC<ReportScreenProps> = ({ onBack }) => {
   }
 
   async function chooseFromLibrary() {
-    const hasPermission = await verifyMediaPermissions();
+    const hasPermission = await verifyAppPermissions('media');
     if (!hasPermission) return;
 
     const result = await launchImageLibraryAsync({
@@ -187,7 +189,7 @@ const ReportScreen: React.FC<ReportScreenProps> = ({ onBack }) => {
     setShowDatePicker(false);
     if (selectedDate) {
       const formattedDate = format(selectedDate, 'MMM dd, yyyy'); // e.g., "Oct 18, 2025"
-      setFormData({ ...formData, date: formattedDate });
+      handleInputChange('date', formattedDate);
     }
   };
 
@@ -256,7 +258,7 @@ const ReportScreen: React.FC<ReportScreenProps> = ({ onBack }) => {
       const formattedHours = hours.toString().padStart(2, '0');
       
       const formattedTime = `${formattedHours}:${minutes} ${ampm}`;
-      setFormData({ ...formData, time: formattedTime });
+      handleInputChange('time', formattedTime);
     }
   };
 
@@ -264,7 +266,7 @@ const ReportScreen: React.FC<ReportScreenProps> = ({ onBack }) => {
 
   const validateForm = () => {
     // incident type
-    const incidentTypeValue = formData.incidentType === 'Other' ? customIncident : formData.incidentType;
+    const incidentTypeValue = formData.incidentType === 'Other' ? formData.customIncident : formData.incidentType;
     if (!incidentTypeValue || incidentTypeValue.trim() === '') {
       Alert.alert('Validation error', 'Please select or enter the type of incident.');
       return false;
@@ -326,8 +328,8 @@ const ReportScreen: React.FC<ReportScreenProps> = ({ onBack }) => {
       
       // Prepare report data
       // Ensure incidentType uses customIncident if provided and formats it correctly for backend
-      const incidentTypeValue = formData.incidentType === 'Other' && customIncident
-        ? customIncident.toLowerCase().replace(/\s+/g, '_')
+      const incidentTypeValue = formData.incidentType === 'Other' && formData.customIncident
+        ? formData.customIncident.toLowerCase().replace(/\s+/g, '_')
         : formData.incidentType.toLowerCase().replace(/\s+/g, '_');
 
       // Fill default date/time if not provided
@@ -445,8 +447,8 @@ const ReportScreen: React.FC<ReportScreenProps> = ({ onBack }) => {
             <Ionicons name="warning" size={24} color={Colors.white} />
           </View>
           <Text style={styles.fieldText}>
-            {formData.incidentType === 'Other' && customIncident 
-              ? customIncident 
+            {formData.incidentType === 'Other' && formData.customIncident 
+              ? formData.customIncident 
               : formData.incidentType || 'Type of Incident*'}
           </Text>
           <Ionicons name="chevron-down" size={20} color={Colors.primary} />
@@ -461,8 +463,8 @@ const ReportScreen: React.FC<ReportScreenProps> = ({ onBack }) => {
             <TextInput
               style={styles.fieldInput}
               placeholder="Enter type of incident"
-              value={customIncident}
-              onChangeText={setCustomIncident}
+              value={formData.customIncident}
+              onChangeText={(text) => handleInputChange('customIncident', text)}
               placeholderTextColor={Colors.textLight}
             />
           </View>
@@ -476,12 +478,10 @@ const ReportScreen: React.FC<ReportScreenProps> = ({ onBack }) => {
                 style={styles.pickerItem}
                 onPress={() => {
                   if (type === 'Other') {
-                    setFormData({ ...formData, incidentType: type });
-                    setShowCustomIncidentInput(true);
+                    handleInputChange('incidentType', type);
                   } else {
-                    setFormData({ ...formData, incidentType: type });
-                    setShowCustomIncidentInput(false);
-                    setCustomIncident('');
+                    handleInputChange('incidentType', type);
+                    handleInputChange('customIncident', '');
                   }
                   setShowTypePicker(false);
                 }}
@@ -598,7 +598,7 @@ const ReportScreen: React.FC<ReportScreenProps> = ({ onBack }) => {
             placeholder="Description of Incident*"
             value={formData.description}
             onChangeText={(text) =>
-              setFormData({ ...formData, description: text })
+              handleInputChange('description', text)
             }
             multiline
             numberOfLines={4}
@@ -655,7 +655,7 @@ const ReportScreen: React.FC<ReportScreenProps> = ({ onBack }) => {
           <Switch
             value={formData.anonymous}
             onValueChange={(value) =>
-              setFormData({ ...formData, anonymous: value })
+              handleInputChange('anonymous', value)
             }
             trackColor={{ false: Colors.gray, true: Colors.primary }}
             thumbColor={Colors.white}
@@ -673,7 +673,7 @@ const ReportScreen: React.FC<ReportScreenProps> = ({ onBack }) => {
                 style={styles.fieldInput}
                 placeholder="Name*"
                 value={formData.name}
-                onChangeText={(text) => setFormData({ ...formData, name: text })}
+                onChangeText={(text) => handleInputChange('name', text)}
                 placeholderTextColor={Colors.textLight}
               />
             </View>
@@ -686,7 +686,7 @@ const ReportScreen: React.FC<ReportScreenProps> = ({ onBack }) => {
                 style={styles.fieldInput}
                 placeholder="Phone*"
                 value={formData.phone}
-                onChangeText={(text) => setFormData({ ...formData, phone: text })}
+                onChangeText={(text) => handleInputChange('phone', text)}
                 keyboardType="phone-pad"
                 placeholderTextColor={Colors.textLight}
               />
@@ -700,7 +700,7 @@ const ReportScreen: React.FC<ReportScreenProps> = ({ onBack }) => {
                 style={styles.fieldInput}
                 placeholder="Email*"
                 value={formData.email}
-                onChangeText={(text) => setFormData({ ...formData, email: text })}
+                onChangeText={(text) => handleInputChange('email', text)}
                 keyboardType="email-address"
                 autoCapitalize="none"
                 placeholderTextColor={Colors.textLight}

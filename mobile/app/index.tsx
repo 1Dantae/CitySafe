@@ -21,7 +21,7 @@ type UserType = 'anonymous' | 'user' | null;
 // Separate component to handle user profile logic
 const AppContent = () => {
   // Start on connection check screen
-  const [currentScreen, setCurrentScreen] = useState<Screen>('connection');
+  const [currentScreen, setCurrentScreen] = useState<Screen>('welcome');
   const [userType, setUserType] = useState<UserType>(null);
   const { setUser } = useUserProfile();
 
@@ -176,7 +176,6 @@ const AppContent = () => {
           <LoginScreen
             onBack={handleBackToWelcome}
             onLogin={handleLogin}
-            onAdminLogin={() => {}} // Admin login removed
           />
         );
       
