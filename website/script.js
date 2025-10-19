@@ -16,6 +16,264 @@ const testAccounts = [
 ];
 
 // ===================================
+// PUBLIC MOBILE ALERT FUNCTIONALITY
+// ===================================
+
+function openPublicAlertModal() {
+    console.log('openPublicAlertModal called');
+    const modal = document.getElementById('publicAlertModal');
+    if (modal) {
+        modal.classList.add('active');
+        document.body.style.overflow = 'hidden';
+        
+        // Initialize message counter
+        const messageInput = document.getElementById('publicAlertMessage');
+        const counter = document.getElementById('messageCounter');
+        if (messageInput && counter) {
+            messageInput.addEventListener('input', function() {
+                counter.textContent = this.value.length;
+            });
+        }
+        
+        // Update estimated users based on radius
+        const radiusSelect = document.getElementById('alertRadius');
+        if (radiusSelect) {
+            radiusSelect.addEventListener('change', updateEstimatedUsers);
+        }
+        
+        console.log('Public Alert Modal opened successfully');
+    }
+}
+
+function closePublicAlertModal() {
+    console.log('closePublicAlertModal called');
+    const modal = document.getElementById('publicAlertModal');
+    if (modal) {
+        modal.classList.remove('active');
+    }
+    document.body.style.overflow = 'auto';
+    
+    const form = document.getElementById('publicAlertForm');
+    if (form) {
+        form.reset();
+    }
+    
+    const counter = document.getElementById('messageCounter');
+    if (counter) {
+        counter.textContent = '0';
+    }
+}
+
+function updateEstimatedUsers() {
+    const radius = document.getElementById('alertRadius').value;
+    const estimatedUsersSpan = document.getElementById('estimatedUsers');
+    
+    if (!estimatedUsersSpan) return;
+    
+    const estimates = {
+        '500': '~150-300',
+        '1000': '~500-1,250',
+        '2000': '~1,500-3,000',
+        '5000': '~5,000-10,000',
+        '10000': '~15,000-30,000',
+        'nationwide': '~500,000+'
+    };
+    
+    estimatedUsersSpan.textContent = estimates[radius] || '~1,250';
+}
+
+function handlePublicAlert(event) {
+    event.preventDefault();
+    console.log('handlePublicAlert called');
+    
+    const notificationOptions = Array.from(document.querySelectorAll('input[name="notificationOptions"]:checked')).map(cb => cb.value);
+    
+    const alertData = {
+        dangerLevel: document.querySelector('input[name="dangerLevel"]:checked').value,
+        title: document.getElementById('publicAlertTitle').value,
+        dangerType: document.getElementById('dangerType').value,
+        location: document.getElementById('publicAlertLocation').value,
+        parish: document.getElementById('publicAlertParish').value,
+        radius: document.getElementById('alertRadius').value,
+        message: document.getElementById('publicAlertMessage').value,
+        safetyInstructions: document.getElementById('safetyInstructions').value,
+        suspectInfo: document.getElementById('publicSuspectInfo').value,
+        vehicleInfo: document.getElementById('publicVehicleInfo').value,
+        notificationOptions: notificationOptions,
+        showOnMap: document.getElementById('showOnMap').checked,
+        sendToWeb: document.getElementById('sendToWeb').checked,
+        requireAcknowledgment: document.getElementById('requireAcknowledgment').checked,
+        timestamp: new Date().toISOString(),
+        sentBy: localStorage.getItem('userEmail') || 'admin@safecity.com',
+        alertId: 'PUB-' + Date.now()
+    };
+    
+    console.log('Public Alert Data:', alertData);
+    
+    // Get display values
+    const dangerLevelText = {
+        'critical': '🚨 EXTREME DANGER',
+        'high': '⚠️ HIGH ALERT',
+        'moderate': 'ℹ️ CAUTION'
+    }[alertData.dangerLevel];
+    
+    const radiusText = {
+        '500': '500 meters',
+        '1000': '1 kilometer',
+        '2000': '2 kilometers',
+        '5000': '5 kilometers',
+        '10000': '10 kilometers',
+        'nationwide': 'NATIONWIDE'
+    }[alertData.radius];
+    
+    const estimatedUsers = document.getElementById('estimatedUsers').textContent;
+    const parishName = getParishName(alertData.parish);
+    
+    // Confirmation
+    const confirmed = confirm(
+        `📱 SEND PUBLIC MOBILE ALERT?\n\n` +
+        `${dangerLevelText}\n\n` +
+        `Title: ${alertData.title}\n` +
+        `Location: ${alertData.location}, ${parishName}\n` +
+        `Radius: ${radiusText}\n\n` +
+        `Estimated Reach: ${estimatedUsers} users\n\n` +
+        `Notifications: ${notificationOptions.map(o => o.toUpperCase()).join(', ')}\n\n` +
+        `⚠️ This will immediately send alerts to all mobile app users in the area.\n\n` +
+        `Continue?`
+    );
+    
+    if (confirmed) {
+        // Simulate sending alert
+        console.log('📱 Sending public mobile alert...');
+        
+        // Show success message
+        alert(
+            `✅ PUBLIC ALERT SENT SUCCESSFULLY!\n\n` +
+            `Alert ID: ${alertData.alertId}\n` +
+            `Delivered to: ${estimatedUsers} mobile devices\n\n` +
+            `📱 Push notifications sent\n` +
+            `${alertData.notificationOptions.includes('sms') ? '💬 SMS messages queued\n' : ''}` +
+            `${alertData.showOnMap ? '🗺️ Danger zone marked on map\n' : ''}` +
+            `${alertData.sendToWeb ? '🌐 Website banner activated\n' : ''}\n` +
+            `\nUsers in ${alertData.location} have been notified of the danger.`
+        );
+        
+        // Add to alerts list
+        addPublicAlertToList(alertData);
+        
+        // Show notification banner
+        showPublicAlertNotification(alertData);
+        
+        closePublicAlertModal();
+    }
+}
+
+function addPublicAlertToList(alertData) {
+    const alertsList = document.querySelector('.alerts-list');
+    
+    if (!alertsList) {
+        console.error('Alerts list not found');
+        return;
+    }
+    
+    const alertCard = document.createElement('div');
+    alertCard.className = 'alert-card urgent';
+    alertCard.style.borderLeftColor = 'var(--warning)';
+    
+    const dangerIcon = {
+        'critical': '🚨',
+        'high': '⚠️',
+        'moderate': 'ℹ️'
+    }[alertData.dangerLevel] || '⚠️';
+    
+    const radiusText = {
+        '500': '500m',
+        '1000': '1km',
+        '2000': '2km',
+        '5000': '5km',
+        '10000': '10km',
+        'nationwide': 'Nationwide'
+    }[alertData.radius];
+    
+    const estimatedUsers = document.getElementById('estimatedUsers').textContent;
+    
+    alertCard.innerHTML = `
+        <div class="alert-header">
+            <h3>${dangerIcon} ${alertData.title}</h3>
+            <span class="alert-time">Just now</span>
+        </div>
+        <p><strong>📱 PUBLIC MOBILE ALERT</strong> - ${estimatedUsers} users notified</p>
+        <p><strong>Location:</strong> ${alertData.location}, ${getParishName(alertData.parish)}</p>
+        <p><strong>Radius:</strong> ${radiusText}</p>
+        <p><strong>Message:</strong> ${alertData.message}</p>
+        ${alertData.suspectInfo ? `<p><strong>Suspect:</strong> ${alertData.suspectInfo}</p>` : ''}
+        ${alertData.vehicleInfo ? `<p><strong>Vehicle:</strong> ${alertData.vehicleInfo}</p>` : ''}
+        <p style="font-size: 0.9rem; color: var(--text-light); margin-top: 0.5rem;">
+            ${alertData.showOnMap ? '🗺️ Shown on map | ' : ''}
+            ${alertData.sendToWeb ? '🌐 Website banner | ' : ''}
+            Sent via: ${alertData.notificationOptions.join(', ').toUpperCase()}
+        </p>
+        <div class="alert-actions" style="margin-top: 1rem;">
+            <button class="btn btn-primary" onclick="viewPublicAlertDetails('${alertData.alertId}')">View Details</button>
+            <button class="btn btn-warning" onclick="updatePublicAlert('${alertData.alertId}')">Update Alert</button>
+            <button class="btn btn-secondary" onclick="cancelPublicAlert('${alertData.alertId}')">Cancel Alert</button>
+        </div>
+    `;
+    
+    alertsList.insertBefore(alertCard, alertsList.firstChild);
+    console.log('Public alert card added to list');
+}
+
+function showPublicAlertNotification(alertData) {
+    const alertsSection = document.getElementById('alerts');
+    if (!alertsSection) return;
+    
+    const banner = document.createElement('div');
+    banner.className = 'alert-banner';
+    banner.style.background = 'var(--warning)';
+    banner.style.color = 'white';
+    banner.innerHTML = `
+        <div class="alert-icon">📱</div>
+        <div>
+            <strong>PUBLIC MOBILE ALERT BROADCAST</strong><br>
+            <span style="font-size: 0.9rem;">${document.getElementById('estimatedUsers').textContent} mobile users have been notified</span>
+        </div>
+    `;
+    
+    const sectionHeader = alertsSection.querySelector('.section-header');
+    if (sectionHeader) {
+        sectionHeader.insertAdjacentElement('afterend', banner);
+        
+        setTimeout(() => {
+            banner.style.opacity = '0';
+            banner.style.transition = 'opacity 0.3s';
+            setTimeout(() => banner.remove(), 300);
+        }, 8000);
+    }
+}
+
+window.viewPublicAlertDetails = function(alertId) {
+    alert(`📱 Viewing public alert: ${alertId}\n\nThis shows delivery status, user acknowledgments, and response statistics.`);
+    console.log('View public alert details:', alertId);
+};
+
+window.updatePublicAlert = function(alertId) {
+    const update = prompt('Enter update message to send to mobile users:');
+    if (update && update.trim()) {
+        alert(`✅ Alert Update Sent!\n\n"${update}"\n\nMobile users have been notified of the update.`);
+        console.log('Update public alert:', alertId, update);
+    }
+};
+
+window.cancelPublicAlert = function(alertId) {
+    const confirmed = confirm('Cancel this public alert?\n\nMobile users will receive an "All Clear" notification.');
+    if (confirmed) {
+        alert(`✅ Alert Cancelled\n\n"All Clear" notification sent to mobile users.\nDanger zone removed from map.`);
+        console.log('Cancel public alert:', alertId);
+    }
+};
+
+// ===================================
 // CRIME REPORTS - COMPLETE FIX
 // ===================================
 
@@ -93,7 +351,7 @@ window.resolveReport = function(btn) {
                 `;
             }
         }
-        alert(`✓ Report ${reportId} marked as resolved!`);
+        alert(`✔ Report ${reportId} marked as resolved!`);
     }
 };
 
@@ -112,7 +370,7 @@ window.archiveReport = function(btn) {
         row.style.opacity = '0.5';
         row.style.textDecoration = 'line-through';
         btn.disabled = true;
-        alert(`✓ Report ${reportId} archived successfully!`);
+        alert(`✔ Report ${reportId} archived successfully!`);
     }
 };
 
@@ -162,7 +420,7 @@ window.exportAllReportsCSV = function() {
     a.click();
     URL.revokeObjectURL(url);
     
-    alert('✓ Reports exported as CSV!');
+    alert('✔ Reports exported as CSV!');
 };
 
 /**
@@ -193,7 +451,7 @@ window.exportAllReportsJSON = function() {
     a.click();
     URL.revokeObjectURL(url);
     
-    alert('✓ Reports exported as JSON!');
+    alert('✔ Reports exported as JSON!');
 };
 
 // ===================================
@@ -322,7 +580,7 @@ window.takeOverChat = function() {
     const confirmed = confirm('Take over this chat? The AI assistant will be paused.');
     
     if (confirmed) {
-        alert('✓ You are now in control of this chat.\n\nAI assistant has been paused.');
+        alert('✔ You are now in control of this chat.\n\nAI assistant has been paused.');
         
         const aiStatus = document.querySelector('.ai-status');
         if (aiStatus) {
@@ -340,7 +598,7 @@ window.escalateChat = function() {
     const confirmed = confirm('Escalate this chat to JDF, JCDF, and National Security?');
     
     if (confirmed) {
-        alert('✓ Chat escalated successfully!\n\nNotifications sent to:\n- Jamaica Defence Force (JDF)\n- Jamaica Constabulary Force (JCDF)\n- National Security');
+        alert('✔ Chat escalated successfully!\n\nNotifications sent to:\n- Jamaica Defence Force (JDF)\n- Jamaica Constabulary Force (JCDF)\n- National Security');
         
         const aiStatus = document.querySelector('.ai-status');
         if (aiStatus) {
@@ -476,7 +734,7 @@ function handleAddUser(event) {
     console.log('New User Data:', formData);
     
     const roleText = formData.role === 'admin' ? 'System Admin' : 'Law Enforcement Personnel';
-    alert(`✓ User created successfully!\n\nName: ${formData.firstName} ${formData.lastName}\nRole: ${roleText}\nEmail: ${formData.email}\nUsername: ${formData.username}`);
+    alert(`✔ User created successfully!\n\nName: ${formData.firstName} ${formData.lastName}\nRole: ${roleText}\nEmail: ${formData.email}\nUsername: ${formData.username}`);
     
     addUserCardToGrid(formData);
     
@@ -672,11 +930,6 @@ function getParishName(parishValue) {
     return parishNames[parishValue] || parishValue;
 }
 
-window.viewAlertDetails = function(alertId) {
-    alert(`Viewing details for Alert: ${alertId}`);
-    console.log('View alert details:', alertId);
-};
-
 window.updateAlertStatus = function(alertId) {
     const newStatus = prompt('Enter new status:\n- Active\n- Dispatched\n- Resolved\n- Cancelled');
     if (newStatus) {
@@ -796,7 +1049,7 @@ window.viewAlertDetails = function(alertId) {
         </div>
         ` : ''}
 
-        <h3 class="detail-section-title">🚓 Response Status</h3>
+        <h3 class="detail-section-title">🚔 Response Status</h3>
         <div class="detail-row">
             <div class="detail-label">Agencies Notified:</div>
             <div class="detail-value">${alert.agencies.join(', ')}</div>
@@ -864,7 +1117,7 @@ window.sendQuickMessage = function() {
         alert('Please enter a message.');
         return;
     }
-    alert(`✓ Message sent successfully!\n\n"${message}"`);
+    alert(`✔ Message sent successfully!\n\n"${message}"`);
     window.closeContactUserModal();
 };
 
@@ -912,7 +1165,7 @@ window.markAsFalsePositive = function() {
     
     if (confirmed) {
         console.log('Marked as false positive. Notes:', notes);
-        alert('✓ Alert marked as false positive.\n\nAI system will be updated to improve future detection.');
+        alert('✔ Alert marked as false positive.\n\nAI system will be updated to improve future detection.');
         window.closeReviewChatModal();
     }
 };
@@ -967,7 +1220,7 @@ window.confirmEscalation = function() {
     }
     
     const agenciesList = agencies.map(a => `- ${a}`).join('\n');
-    const confirmed = confirm(`🚨 CONFIRM ESCALATION\n\nPriority: ${priority.toUpperCase()}\n\nNotifying:\n${agenciesList}\n\n${dispatchUnits ? '✓ Units will be dispatched\n' : ''}${notifyCommander ? '✓ Duty Commander will be notified\n' : ''}\nProceed with escalation?`);
+    const confirmed = confirm(`🚨 CONFIRM ESCALATION\n\nPriority: ${priority.toUpperCase()}\n\nNotifying:\n${agenciesList}\n\n${dispatchUnits ? '✔ Units will be dispatched\n' : ''}${notifyCommander ? '✔ Duty Commander will be notified\n' : ''}\nProceed with escalation?`);
     
     if (confirmed) {
         console.log('Escalation confirmed', { agencies, priority, reason, dispatchUnits, notifyCommander });
@@ -1044,17 +1297,17 @@ function simulateNotifications() {
 
 window.notifyJDF = function() {
     console.log('Notify JDF clicked');
-    alert('✓ Jamaica Defence Force (JDF) has been notified.\n\nResponse units are being coordinated.');
+    alert('✔ Jamaica Defence Force (JDF) has been notified.\n\nResponse units are being coordinated.');
 };
 
 window.notifyJCDF = function() {
     console.log('Notify JCDF clicked');
-    alert('✓ Jamaica Constabulary Force (JCDF) has been notified.\n\nResponse units are being coordinated.');
+    alert('✔ Jamaica Constabulary Force (JCDF) has been notified.\n\nResponse units are being coordinated.');
 };
 
 window.notifyNationalSecurity = function() {
     console.log('Notify National Security clicked');
-    alert('✓ National Security Agency has been notified.\n\nThis is a critical escalation.');
+    alert('✔ National Security Agency has been notified.\n\nThis is a critical escalation.');
 };
 
 window.takeOverChatFromDetails = function() {
@@ -1062,7 +1315,7 @@ window.takeOverChatFromDetails = function() {
     const confirmed = confirm('Take over this chat? The AI assistant will be paused and you will respond directly.');
     
     if (confirmed) {
-        alert('✓ You are now in control of this chat.\n\nAI assistant has been paused.');
+        alert('✔ You are now in control of this chat.\n\nAI assistant has been paused.');
         
         const aiStatus = document.querySelector('.ai-status');
         if (aiStatus) {
@@ -1136,6 +1389,7 @@ window.onclick = function(event) {
         'reportDetailsModal',
         'addUserModal',
         'createAlertModal',
+        'publicAlertModal',
         'viewDetailsModal',
         'contactUserModal',
         'reviewChatModal',
@@ -1158,6 +1412,7 @@ document.addEventListener('keydown', function(e) {
             'reportDetailsModal',
             'addUserModal',
             'createAlertModal',
+            'publicAlertModal',
             'viewDetailsModal',
             'contactUserModal',
             'reviewChatModal',

@@ -1251,6 +1251,12 @@ tbody tr:hover {
     color: var(--text-light);
 }
 
+.alert-actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 1rem;
+}
+
 /* Emergency Status */
 .emergency-status {
     display: flex;
@@ -1550,81 +1556,6 @@ tbody tr:hover {
     box-shadow: 0 4px 12px rgba(30, 58, 95, 0.3);
 }
 
-/* Responsive */
-@media (max-width: 1024px) {
-    .chat-monitoring-grid {
-        grid-template-columns: 1fr;
-    }
-    
-    .chat-details {
-        display: none;
-    }
-}
-
-@media (max-width: 768px) {
-    .sidebar {
-        width: 0;
-        display: none;
-    }
-    
-    .main-content {
-        margin-left: 0;
-    }
-    
-    .dashboard-header {
-        flex-direction: column;
-        gap: 1rem;
-    }
-    
-    .header-right {
-        width: 100%;
-        justify-content: space-between;
-    }
-    
-    .portal-options {
-        grid-template-columns: 1fr;
-    }
-    
-    .hero-content h1 {
-        font-size: 2rem;
-    }
-
-    /* Modal Responsive */
-    .modal-content {
-        width: 95%;
-        max-height: 95vh;
-    }
-
-    .modal-header {
-        padding: 1.5rem;
-    }
-
-    .modal-header h3 {
-        font-size: 1.5rem;
-    }
-
-    .modal-body {
-        padding: 1.5rem;
-    }
-
-    .modal-footer {
-        padding: 1rem 1.5rem;
-        flex-direction: column;
-    }
-
-    .modal-footer .btn {
-        width: 100%;
-    }
-
-    .form-row {
-        grid-template-columns: 1fr;
-        gap: 0;
-    }
-
-    .role-options {
-        flex-direction: column;
-    }
-}
 /* ==================== CREATE ALERT MODAL STYLES ==================== */
 
 /* Alert Type/Priority Selection */
@@ -1815,42 +1746,6 @@ tbody tr:hover {
     accent-color: var(--primary);
 }
 
-/* Danger Button Styling */
-.btn-danger {
-    background: var(--emergency);
-    color: var(--white);
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    justify-content: center;
-}
-
-.btn-danger:hover {
-    background: var(--emergency-dark);
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
-}
-
-/* Responsive Adjustments for Alert Modal */
-@media (max-width: 768px) {
-    .priority-options {
-        grid-template-columns: 1fr;
-    }
-
-    .agency-checkboxes {
-        grid-template-columns: 1fr;
-    }
-
-    .priority-label {
-        flex-direction: row;
-        justify-content: center;
-        padding: 1rem;
-    }
-
-    .priority-icon {
-        font-size: 1.5rem;
-    }
-}
 /* ==================== ALERT ACTION MODALS STYLES ==================== */
 
 /* Contact Method Grid */
@@ -2087,8 +1982,98 @@ tbody tr:hover {
     font-size: 0.95rem;
 }
 
-/* Responsive Adjustments */
+/* Responsive */
+@media (max-width: 1024px) {
+    .chat-monitoring-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .chat-details {
+        display: none;
+    }
+}
+
 @media (max-width: 768px) {
+    .sidebar {
+        width: 0;
+        display: none;
+    }
+    
+    .main-content {
+        margin-left: 0;
+    }
+    
+    .dashboard-header {
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .header-right {
+        width: 100%;
+        justify-content: space-between;
+    }
+    
+    .portal-options {
+        grid-template-columns: 1fr;
+    }
+    
+    .hero-content h1 {
+        font-size: 2rem;
+    }
+
+    .modal-content {
+        width: 95%;
+        max-height: 95vh;
+    }
+
+    .modal-header {
+        padding: 1.5rem;
+    }
+
+    .modal-header h3 {
+        font-size: 1.5rem;
+    }
+
+    .modal-body {
+        padding: 1.5rem;
+    }
+
+    .modal-footer {
+        padding: 1rem 1.5rem;
+        flex-direction: column;
+    }
+
+    .modal-footer .btn {
+        width: 100%;
+    }
+
+    .form-row {
+        grid-template-columns: 1fr;
+        gap: 0;
+    }
+
+    .role-options {
+        flex-direction: column;
+    }
+
+    .priority-options {
+        grid-template-columns: 1fr;
+    }
+
+    .agency-checkboxes {
+        grid-template-columns: 1fr;
+    }
+
+    .priority-label {
+        flex-direction: row;
+        justify-content: center;
+        padding: 1rem;
+    }
+
+    .priority-icon {
+        font-size: 1.5rem;
+    }
+
     .contact-method-grid {
         grid-template-columns: 1fr;
     }

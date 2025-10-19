@@ -13,120 +13,7 @@
         <div class="auth-container">
             <div class="auth-card">
                 <div class="auth-header">
-                    <div class="badge-icon">🛡️</div>
-                    <h2>Law Enforcement Login</h2>
-                    <p>Jamaica Defence Force & Constabulary Force Portal</p>
-                    <div class="test-credentials">
-                        <p><strong>Test Accounts:</strong></p>
-                        <p>JDF: jdf@safecity.com / DefaultJDF123</p>
-                        <p>JCF: jcf@safecity.com / DefaultJCF123</p>
-                        <p>National Security: security@safecity.com / DefaultNS123</p>
-                    </div>
-                </div>
-
-                <form id="lawEnforcementLoginForm" class="auth-form">
-                    <div class="form-group">
-                        <label for="email">Official Email</label>
-                        <input type="email" id="email" name="email" required placeholder="officer@jdf.gov.jm">
-                    </div>
-
-                    <div class="form-group">
-                        <label for="password">Password</label>
-                        <div class="password-input">
-                            <input type="password" id="password" name="password" required placeholder="Enter password">
-                            <button type="button" class="toggle-password" onclick="togglePassword()">
-                                
-                            </button>
-                        </div>
-                    </div>
-
-                    <button type="submit" class="btn btn-primary btn-full">Secure Login</button>
-
-                    <div class="form-footer">
-                        <a href="#" class="link">Forgot Credentials?</a>
-                        <span class="divider">|</span>
-                        <a href="#" class="link">Request Access</a>
-                    </div>
-                </form>
-
-                <div class="security-notice">
-                    <p> This is a secure government portal. Unauthorized access is prohibited.</p>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <script>
-        // Test accounts
-        const testAccounts = [
-            { email: 'jdf@safecity.com', password: 'DefaultJDF123', role: 'law-enforcement', department: 'JDF', firstLogin: true },
-            { email: 'jcf@safecity.com', password: 'DefaultJCF123', role: 'law-enforcement', department: 'JCF', firstLogin: true },
-            { email: 'security@safecity.com', password: 'DefaultNS123', role: 'law-enforcement', department: 'National Security', firstLogin: true }
-        ];
-
-        function togglePassword() {
-            const passwordInput = document.getElementById('password');
-            const eyeIcon = document.getElementById('eyeIcon');
-            
-            if (passwordInput.type === 'password') {
-                passwordInput.type = 'text';
-               
-            } else {
-                passwordInput.type = 'password';
-               
-            }
-        }
-
-        document.getElementById('lawEnforcementLoginForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
-            
-            // Find matching account
-            const account = testAccounts.find(acc => acc.email === email && acc.password === password);
-            
-            if (account) {
-                // Store user data
-                localStorage.setItem('userType', account.role);
-                localStorage.setItem('userEmail', email);
-                localStorage.setItem('userDepartment', account.department);
-                localStorage.setItem('badgeNumber', account.department + '-12345');
-                localStorage.setItem('department', account.department);
-                
-                // Check if first login
-                if (account.firstLogin) {
-                    // Mark that password change is required
-                    localStorage.setItem('requiresPasswordChange', 'true');
-                    
-                    // Redirect to password change page
-                    window.location.href = 'change-password.html';
-                } else {
-                    // Redirect to law enforcement dashboard
-                    window.location.href = 'law-enforcement-dashboard.html';
-                }
-            } else {
-                alert('Invalid email or password');
-            }
-        });
-    </script>
-</body>
-</html><!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Law Enforcement Login - SafeCity</title>
-    <link rel="stylesheet" href="style.css">
-</head>
-<body>
-    <div class="auth-page law-enforcement">
-        <a href="index.html" class="back-btn">← Back to Home</a>
-        
-        <div class="auth-container">
-            <div class="auth-card">
-                <div class="auth-header">
-                    <div class="badge-icon">🛡️</div>
+                    <div class="badge-icon">👮</div>
                     <h2>Law Enforcement Login</h2>
                     <p>Jamaica Defence Force & Constabulary Force Portal</p>
                     <div class="test-credentials">
@@ -162,9 +49,9 @@
                         <label for="department">Department</label>
                         <select id="department" name="department" required>
                             <option value="">Select Department</option>
-                            <option value="jdf">Jamaica Defence Force (JDF)</option>
-                            <option value="jcf">Jamaica Constabulary Force (JCF)</option>
-                            <option value="national-security">National Security</option>
+                            <option value="JDF">Jamaica Defence Force (JDF)</option>
+                            <option value="JCF">Jamaica Constabulary Force (JCF)</option>
+                            <option value="National Security">National Security</option>
                         </select>
                     </div>
 
@@ -178,45 +65,66 @@
                 </form>
 
                 <div class="security-notice">
-                    <p>🔒 This is a secure government portal. Unauthorized access is prohibited.</p>
+                    <p>🔐 This is a secure government portal. Unauthorized access is prohibited.</p>
                 </div>
             </div>
         </div>
     </div>
 
-    <script>
-        function togglePassword() {
-            const passwordInput = document.getElementById('password');
-            const eyeIcon = document.getElementById('eyeIcon');
+    <!-- Password Change Modal -->
+    <div id="changePasswordModal" class="modal">
+        <div class="modal-content">
+            <h2>Change Password</h2>
+            <p>You must change your password before accessing the system.</p>
             
-            if (passwordInput.type === 'password') {
-                passwordInput.type = 'text';
-                
-            } else {
-                passwordInput.type = 'password';
-                
-            }
-        }
+            <form id="changePasswordForm" class="auth-form">
+                <div class="form-group">
+                    <label for="newPassword">New Password</label>
+                    <div class="password-input">
+                        <input type="password" id="newPassword" name="newPassword" required 
+                               placeholder="Enter new password" minlength="8">
+                        <button type="button" class="toggle-password" onclick="toggleNewPassword()">
+                            <span id="eyeIcon1">👁️</span>
+                        </button>
+                    </div>
+                    <small>Password must be at least 8 characters</small>
+                </div>
 
-        document.getElementById('lawEnforcementLoginForm').addEventListener('submit', function(e) {
-            e.preventDefault();
+                <div class="form-group">
+                    <label for="confirmPassword">Confirm Password</label>
+                    <div class="password-input">
+                        <input type="password" id="confirmPassword" name="confirmPassword" required 
+                               placeholder="Confirm new password">
+                        <button type="button" class="toggle-password" onclick="toggleConfirmPassword()">
+                            <span id="eyeIcon2">👁️</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div id="passwordError" class="error-message"></div>
+
+                <button type="submit" class="btn btn-primary btn-full">Update Password</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Success Modal -->
+    <div id="successModal" class="modal">
+        <div class="modal-content">
+            <h2>✓ Login Successful</h2>
+            <div class="success-message">
+                You have successfully logged in to SafeCity
+            </div>
+            <div id="successInfo"></div>
             
-            const badgeNumber = document.getElementById('badgeNumber').value;
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
-            const department = document.getElementById('department').value;
-            
-            if (badgeNumber && email && password && department) {
-                localStorage.setItem('userType', 'law-enforcement');
-                localStorage.setItem('userEmail', email);
-                localStorage.setItem('badgeNumber', badgeNumber);
-                localStorage.setItem('department', department);
-                
-                window.location.href = 'law-enforcement-dashboard.html';
-            } else {
-                alert('Please fill in all fields');
-            }
-        });
-    </script>
+            <div class="dashboard-preview">
+                <h3>Redirecting to Dashboard...</h3>
+                <p id="redirectMessage">You will be redirected in <span id="countdown">3</span> seconds</p>
+                <button type="button" class="btn btn-primary" onclick="goToDashboard()">Go to Dashboard Now</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="le-script.js"></script>
 </body>
 </html>

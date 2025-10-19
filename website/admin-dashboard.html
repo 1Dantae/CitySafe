@@ -135,7 +135,7 @@
             <section id="reports" class="content-section">
                 <div class="section-header">
                     <h2>Crime Reports</h2>
-                    <button class="btn btn-primary">Export Reports</button>
+                    <button class="btn btn-primary" onclick="exportReports()">Export Reports</button>
                 </div>
 
                 <div class="reports-table">
@@ -160,8 +160,8 @@
                                 <td><span class="status-badge new">New</span></td>
                                 <td>Anonymous</td>
                                 <td>
-                                    <button class="btn-action">View</button>
-                                    <button class="btn-action">Resolve</button>
+                                    <button class="btn-action" onclick="viewReport(this)">View</button>
+                                    <button class="btn-action" onclick="resolveReport(this)">Resolve</button>
                                 </td>
                             </tr>
                             <tr>
@@ -172,8 +172,8 @@
                                 <td><span class="status-badge pending">Pending</span></td>
                                 <td>John Doe</td>
                                 <td>
-                                    <button class="btn-action">View</button>
-                                    <button class="btn-action">Resolve</button>
+                                    <button class="btn-action" onclick="viewReport(this)">View</button>
+                                    <button class="btn-action" onclick="resolveReport(this)">Resolve</button>
                                 </td>
                             </tr>
                             <tr>
@@ -184,8 +184,8 @@
                                 <td><span class="status-badge resolved">Resolved</span></td>
                                 <td>Jane Smith</td>
                                 <td>
-                                    <button class="btn-action">View</button>
-                                    <button class="btn-action">Archive</button>
+                                    <button class="btn-action" onclick="viewReport(this)">View</button>
+                                    <button class="btn-action" onclick="archiveReport(this)">Archive</button>
                                 </td>
                             </tr>
                         </tbody>
@@ -252,8 +252,6 @@
                             </div>
                         </div>
                     </div>
-                
-                   
 
                     <!-- Chat Window -->
                     <div class="chat-window">
@@ -331,10 +329,10 @@
 
                         <div class="detail-section">
                             <h4>Escalation Actions</h4>
-                            <button class="btn btn-full btn-warning">Notify JDF</button>
-                            <button class="btn btn-full btn-warning">Notify JCDF</button>
-                            <button class="btn btn-full btn-danger">National Security</button>
-                            <button class="btn btn-full">Take Over Chat</button>
+                            <button class="btn btn-full btn-warning" onclick="notifyJDF()">Notify JDF</button>
+                            <button class="btn btn-full btn-warning" onclick="notifyJCDF()">Notify JCDF</button>
+                            <button class="btn btn-full btn-danger" onclick="notifyNationalSecurity()">National Security</button>
+                            <button class="btn btn-full" onclick="takeOverChatFromDetails()">Take Over Chat</button>
                         </div>
 
                         <div class="detail-section">
@@ -382,7 +380,10 @@
             <section id="alerts" class="content-section">
                 <div class="section-header">
                     <h2>Emergency Alerts</h2>
-                    <button class="btn btn-danger" onclick="openCreateAlertModal()">Create Alert</button>
+                    <div style="display: flex; gap: 1rem;">
+                        <button class="btn btn-danger" onclick="openCreateAlertModal()">Create Alert</button>
+                        <button class="btn btn-warning" onclick="openPublicAlertModal()">📱 Send Public Alert</button>
+                    </div>
                 </div>
 
                 <div class="alerts-list">
@@ -474,7 +475,6 @@
                 </div>
 
                 <form id="addUserForm" onsubmit="handleAddUser(event)">
-                    <!-- Role Selection -->
                     <div class="role-select">
                         <label>Select User Role *</label>
                         <div class="role-options">
@@ -489,7 +489,6 @@
                         </div>
                     </div>
 
-                    <!-- Personal Information -->
                     <div class="form-row">
                         <div class="form-group">
                             <label for="firstName">First Name *</label>
@@ -523,7 +522,6 @@
                         </select>
                     </div>
 
-                    <!-- Login Credentials -->
                     <div class="form-group">
                         <label for="username">Username *</label>
                         <input type="text" id="username" required placeholder="Create username">
@@ -577,10 +575,12 @@
                     <div><strong>Status:</strong> <span id="reportStatus">-</span></div>
                     <div><strong>Reporter:</strong> <span id="reportReporter">-</span></div>
                 </div>
-
-                <hr>
-
-                
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeReportDetailsModal()">Close</button>
+            </div>
+        </div>
+    </div>
 
     <!-- Create Alert Modal -->
     <div id="createAlertModal" class="modal">
@@ -595,7 +595,6 @@
                 </div>
 
                 <form id="createAlertForm" onsubmit="handleCreateAlert(event)">
-                    <!-- Alert Type Selection -->
                     <div class="alert-type-select">
                         <label>Alert Priority Level *</label>
                         <div class="priority-options">
@@ -623,7 +622,6 @@
                         </div>
                     </div>
 
-                    <!-- Alert Details -->
                     <div class="form-group">
                         <label for="alertTitle">Alert Title *</label>
                         <input type="text" id="alertTitle" required placeholder="e.g., Armed Robbery in Progress">
@@ -689,7 +687,6 @@
                         </div>
                     </div>
 
-                    <!-- Notify Agencies -->
                     <div class="notify-agencies">
                         <label>Notify Agencies *</label>
                         <div class="agency-checkboxes">
@@ -744,6 +741,204 @@
         </div>
     </div>
 
+    <!-- Public Mobile Alert Modal -->
+    <div id="publicAlertModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>📱 Send Public Mobile Alert</h3>
+                <button class="close-btn" onclick="closePublicAlertModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="alert-banner" style="background: var(--warning); margin-bottom: 1.5rem;">
+                    <div class="alert-icon">⚠️</div>
+                    <div>
+                        <strong>PUBLIC SAFETY ALERT</strong><br>
+                        <span style="font-size: 0.9rem;">This will send push notifications to all mobile users in the selected area</span>
+                    </div>
+                </div>
+
+                <form id="publicAlertForm" onsubmit="handlePublicAlert(event)">
+                    <div class="alert-type-select">
+                        <label>Danger Level *</label>
+                        <div class="priority-options">
+                            <div class="priority-option">
+                                <input type="radio" id="dangerCritical" name="dangerLevel" value="critical" checked>
+                                <label for="dangerCritical" class="priority-label critical">
+                                    <span class="priority-icon">🚨</span>
+                                    Extreme
+                                </label>
+                            </div>
+                            <div class="priority-option">
+                                <input type="radio" id="dangerHigh" name="dangerLevel" value="high">
+                                <label for="dangerHigh" class="priority-label high">
+                                    <span class="priority-icon">⚠️</span>
+                                    High
+                                </label>
+                            </div>
+                            <div class="priority-option">
+                                <input type="radio" id="dangerModerate" name="dangerLevel" value="moderate">
+                                <label for="dangerModerate" class="priority-label medium">
+                                    <span class="priority-icon">ℹ️</span>
+                                    Moderate
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="publicAlertTitle">Alert Title *</label>
+                        <input type="text" id="publicAlertTitle" required placeholder="e.g., Armed Suspect in Area - Stay Indoors">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="dangerType">Danger Type *</label>
+                        <select id="dangerType" required>
+                            <option value="">Select Danger Type</option>
+                            <option value="armed_suspect">Armed Suspect in Area</option>
+                            <option value="active_shooter">Active Shooter</option>
+                            <option value="robbery">Robbery in Progress</option>
+                            <option value="gang_activity">Gang Activity</option>
+                            <option value="kidnapping">Kidnapping/Abduction</option>
+                            <option value="road_closure">Emergency Road Closure</option>
+                            <option value="natural_disaster">Natural Disaster</option>
+                            <option value="fire">Fire Emergency</option>
+                            <option value="chemical_hazard">Chemical/Hazardous Materials</option>
+                            <option value="civil_unrest">Civil Unrest</option>
+                            <option value="other">Other Emergency</option>
+                        </select>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="publicAlertLocation">Specific Location *</label>
+                            <input type="text" id="publicAlertLocation" required placeholder="Street name, landmark, or area">
+                        </div>
+                        <div class="form-group">
+                            <label for="publicAlertParish">Parish *</label>
+                            <select id="publicAlertParish" required>
+                                <option value="">Select Parish</option>
+                                <option value="kingston">Kingston</option>
+                                <option value="st_andrew">St. Andrew</option>
+                                <option value="st_thomas">St. Thomas</option>
+                                <option value="portland">Portland</option>
+                                <option value="st_mary">St. Mary</option>
+                                <option value="st_ann">St. Ann</option>
+                                <option value="trelawny">Trelawny</option>
+                                <option value="st_james">St. James</option>
+                                <option value="hanover">Hanover</option>
+                                <option value="westmoreland">Westmoreland</option>
+                                <option value="st_elizabeth">St. Elizabeth</option>
+                                <option value="manchester">Manchester</option>
+                                <option value="clarendon">Clarendon</option>
+                                <option value="st_catherine">St. Catherine</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="alertRadius">Alert Radius *</label>
+                        <select id="alertRadius" required>
+                            <option value="500">500 meters (Immediate vicinity)</option>
+                            <option value="1000" selected>1 kilometer</option>
+                            <option value="2000">2 kilometers</option>
+                            <option value="5000">5 kilometers</option>
+                            <option value="10000">10 kilometers (Parish-wide)</option>
+                            <option value="nationwide">Nationwide Alert</option>
+                        </select>
+                        <small style="color: var(--text-light); font-size: 0.85rem;">
+                            📍 Users within this radius will receive the notification
+                        </small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="publicAlertMessage">Alert Message *</label>
+                        <textarea id="publicAlertMessage" required placeholder="Clear, concise message to inform citizens about the danger and recommended actions..." rows="4" maxlength="300"></textarea>
+                        <small style="color: var(--text-light); font-size: 0.85rem;">
+                            <span id="messageCounter">0</span>/300 characters
+                        </small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="safetyInstructions">Safety Instructions *</label>
+                        <textarea id="safetyInstructions" required placeholder="What should citizens do? (e.g., Stay indoors, lock doors, avoid the area...)" rows="3"></textarea>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="publicSuspectInfo">Suspect Description (if applicable)</label>
+                            <input type="text" id="publicSuspectInfo" placeholder="Physical description, clothing">
+                        </div>
+                        <div class="form-group">
+                            <label for="publicVehicleInfo">Vehicle Information (if applicable)</label>
+                            <input type="text" id="publicVehicleInfo" placeholder="Make, model, color, license">
+                        </div>
+                    </div>
+
+                    <div class="notify-agencies" style="border-color: var(--warning);">
+                        <label>Notification Options</label>
+                        <div class="agency-checkboxes">
+                            <label class="agency-checkbox">
+                                <input type="checkbox" name="notificationOptions" value="push" checked disabled>
+                                <span class="agency-name">📱 Push Notifications (Default)</span>
+                            </label>
+                            <label class="agency-checkbox">
+                                <input type="checkbox" name="notificationOptions" value="sms" checked>
+                                <span class="agency-name">💬 SMS Text Messages</span>
+                            </label>
+                            <label class="agency-checkbox">
+                                <input type="checkbox" name="notificationOptions" value="sound" checked>
+                                <span class="agency-name">🔊 Emergency Sound Alert</span>
+                            </label>
+                            <label class="agency-checkbox">
+                                <input type="checkbox" name="notificationOptions" value="vibration" checked>
+                                <span class="agency-name">📳 Vibration Alert</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="showOnMap">
+                            Show danger zone on app map with red boundary
+                        </label>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="sendToWeb">
+                            Also display on SafeCity website banner
+                        </label>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="requireAcknowledgment">
+                            Require user acknowledgment (users must confirm they've read the alert)
+                        </label>
+                    </div>
+
+                    <div style="background: linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, rgba(245, 158, 11, 0.2) 100%); padding: 1.25rem; border-radius: 12px; border: 2px solid var(--warning);">
+                        <h4 style="color: var(--warning); margin-bottom: 0.75rem; font-size: 1rem;">
+                            📊 Estimated Reach
+                        </h4>
+                        <p style="font-size: 0.95rem; margin-bottom: 0.5rem;">
+                            <strong>Approximate Users:</strong> <span id="estimatedUsers">~500-1,250</span>
+                        </p>
+                        <p style="font-size: 0.85rem; color: var(--text-light);">
+                            Based on selected radius and active users in the area
+                        </p>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closePublicAlertModal()">Cancel</button>
+                <button class="btn btn-warning" onclick="document.getElementById('publicAlertForm').requestSubmit()" style="background: var(--warning); color: white;">
+                    📱 Send Alert to Mobile Users
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- View Alert Details Modal -->
     <div id="viewDetailsModal" class="modal">
         <div class="modal-content" style="max-width: 800px;">
@@ -752,9 +947,7 @@
                 <button class="close-btn" onclick="closeViewDetailsModal()">&times;</button>
             </div>
             <div class="modal-body">
-                <div id="alertDetailsContent">
-                    <!-- Content will be dynamically inserted here -->
-                </div>
+                <div id="alertDetailsContent"></div>
             </div>
             <div class="modal-footer">
                 <button class="btn btn-secondary" onclick="closeViewDetailsModal()">Close</button>
@@ -800,9 +993,7 @@
 
                 <div class="user-contact-info">
                     <h4>User Information</h4>
-                    <div id="userContactDetails">
-                        <!-- Content will be dynamically inserted -->
-                    </div>
+                    <div id="userContactDetails"></div>
                 </div>
 
                 <div class="form-group">
@@ -843,9 +1034,7 @@
 
                 <div class="chat-transcript">
                     <h4>Full Conversation Transcript</h4>
-                    <div id="chatTranscriptContent" class="transcript-messages">
-                        <!-- Content will be dynamically inserted -->
-                    </div>
+                    <div id="chatTranscriptContent" class="transcript-messages"></div>
                 </div>
 
                 <div class="review-actions-section">
@@ -888,9 +1077,7 @@
 
                 <div class="escalation-info">
                     <h4>Alert Information</h4>
-                    <div id="escalationAlertInfo">
-                        <!-- Content will be dynamically inserted -->
-                    </div>
+                    <div id="escalationAlertInfo"></div>
                 </div>
 
                 <div class="notify-agencies">
