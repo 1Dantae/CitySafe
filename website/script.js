@@ -8,7 +8,6 @@ console.log('SafeCity Dashboard Loading...');
 // TEST ACCOUNTS & AUTHENTICATION
 // ===================================
 
-// Test accounts with default passwords
 const testAccounts = [
     { email: 'admin@safecity.com', password: 'Admin123!', role: 'admin', firstLogin: false },
     { email: 'jdf@safecity.com', password: 'DefaultJDF123', role: 'law-enforcement', department: 'JDF', firstLogin: true },
@@ -17,401 +16,197 @@ const testAccounts = [
 ];
 
 // ===================================
-// ADD USER MODAL FUNCTIONALITY
+// CRIME REPORTS - COMPLETE FIX
 // ===================================
 
 /**
- * Opens the Add User modal
+ * View Report - Opens modal with details
  */
-function openAddUserModal() {
-    console.log('openAddUserModal called');
-    const modal = document.getElementById('addUserModal');
-    if (modal) {
-        modal.classList.add('active');
-        document.body.style.overflow = 'hidden';
-        console.log('Modal opened successfully');
-    } else {
-        console.error('ERROR: Modal element with id "addUserModal" not found!');
+window.viewReport = function(btn) {
+    console.log('viewReport clicked');
+    const row = btn.closest('tr');
+    if (!row) {
+        console.error('Could not find row');
+        return;
     }
-}
+    
+    const cells = row.querySelectorAll('td');
+    const reportId = cells[0]?.innerText?.trim() || '';
+    const type = cells[1]?.innerText?.trim() || '';
+    const location = cells[2]?.innerText?.trim() || '';
+    const date = cells[3]?.innerText?.trim() || '';
+    const status = cells[4]?.innerText?.trim() || '';
+    const reporter = cells[5]?.innerText?.trim() || '';
+    
+    console.log('Report Data:', { reportId, type, location, date, status, reporter });
+    
+    document.getElementById('reportId').innerText = reportId;
+    document.getElementById('reportType').innerText = type;
+    document.getElementById('reportLocation').innerText = location;
+    document.getElementById('reportDate').innerText = date;
+    document.getElementById('reportStatus').innerText = status;
+    document.getElementById('reportReporter').innerText = reporter;
+    
+    const reportModal = document.getElementById('reportDetailsModal');
+    if (reportModal) {
+        reportModal.classList.add('active');
+        reportModal.setAttribute('aria-hidden', 'false');
+        document.body.style.overflow = 'hidden';
+        console.log('Modal opened');
+    }
+};
 
 /**
- * Closes the Add User modal and resets the form
+ * Close Report Details Modal
  */
-function closeAddUserModal() {
-    console.log('closeAddUserModal called');
-    const modal = document.getElementById('addUserModal');
+window.closeReportDetailsModal = function() {
+    console.log('closeReportDetailsModal called');
+    const modal = document.getElementById('reportDetailsModal');
     if (modal) {
         modal.classList.remove('active');
+        modal.setAttribute('aria-hidden', 'true');
+        document.body.style.overflow = '';
     }
-    document.body.style.overflow = 'auto';
-    
-    // Reset form
-    const form = document.getElementById('addUserForm');
-    if (form) {
-        form.reset();
-    }
-    
-    // Reset password strength indicator
-    const strengthBar = document.getElementById('passwordStrengthBar');
-    if (strengthBar) {
-        strengthBar.className = 'password-strength-bar';
-    }
-}
+};
 
 /**
- * Checks password strength and updates visual indicator
+ * Resolve Report
  */
-function checkPasswordStrength() {
-    const password = document.getElementById('password');
-    const strengthBar = document.getElementById('passwordStrengthBar');
+window.resolveReport = function(btn) {
+    console.log('resolveReport clicked');
+    const row = btn.closest('tr');
+    if (!row) return;
     
-    if (!password || !strengthBar) return;
+    const reportId = row.querySelector('td').innerText;
+    const confirmed = confirm(`Mark report ${reportId} as resolved?`);
     
-    const passwordValue = password.value;
-    
-    // Reset classes
-    strengthBar.className = 'password-strength-bar';
-    
-    // Calculate strength
-    let strength = 0;
-    
-    // Length check
-    if (passwordValue.length >= 8) strength++;
-    
-    // Mixed case check
-    if (passwordValue.match(/[a-z]/) && passwordValue.match(/[A-Z]/)) strength++;
-    
-    // Number check
-    if (passwordValue.match(/[0-9]/)) strength++;
-    
-    // Special character check
-    if (passwordValue.match(/[^a-zA-Z0-9]/)) strength++;
-    
-    // Apply appropriate class based on strength
-    if (strength >= 4) {
-        strengthBar.classList.add('strong');
-    } else if (strength >= 2) {
-        strengthBar.classList.add('medium');
-    } else if (strength >= 1) {
-        strengthBar.classList.add('weak');
-    }
-}
-
-/**
- * Handles form submission for adding new user
- * @param {Event} event - Form submit event
- */
-function handleAddUser(event) {
-    event.preventDefault();
-    console.log('handleAddUser called');
-    
-    // Get password values
-    const password = document.getElementById('password').value;
-    const confirmPassword = document.getElementById('confirmPassword').value;
-    
-    // Validate passwords match
-    if (password !== confirmPassword) {
-        alert('Passwords do not match! Please re-enter your passwords.');
-        return;
-    }
-    
-    // Validate password strength
-    if (password.length < 8) {
-        alert('Password must be at least 8 characters long.');
-        return;
-    }
-    
-    // Collect form data
-    const formData = {
-        role: document.querySelector('input[name="role"]:checked').value,
-        firstName: document.getElementById('firstName').value,
-        lastName: document.getElementById('lastName').value,
-        email: document.getElementById('email').value,
-        badgeId: document.getElementById('badgeId').value,
-        department: document.getElementById('department').value,
-        username: document.getElementById('username').value,
-        password: password,
-        accessLevel: document.getElementById('accessLevel').value,
-        dateCreated: new Date().toISOString()
-    };
-    
-    // Log the data (in production, send to backend)
-    console.log('New User Data:', formData);
-    
-    // TODO: Send data to backend API
-    // Example:
-    // fetch('/api/users/create', {
-    //     method: 'POST',
-    //     headers: { 'Content-Type': 'application/json' },
-    //     body: JSON.stringify(formData)
-    // })
-    // .then(response => response.json())
-    // .then(data => {
-    //     addUserCardToGrid(formData);
-    //     closeAddUserModal();
-    // })
-    // .catch(error => {
-    //     alert('Failed to create user. Please try again.');
-    // });
-    
-    // For now, show success message
-    const roleText = formData.role === 'admin' ? 'System Admin' : 'Law Enforcement Personnel';
-    alert(`✓ User created successfully!\n\nName: ${formData.firstName} ${formData.lastName}\nRole: ${roleText}\nEmail: ${formData.email}\nUsername: ${formData.username}`);
-    
-    // Add user card to the grid immediately
-    addUserCardToGrid(formData);
-    
-    // Close modal
-    closeAddUserModal();
-}
-
-/**
- * Adds a new user card to the users grid
- * @param {Object} userData - User data object
- */
-function addUserCardToGrid(userData) {
-    const usersGrid = document.querySelector('.users-grid');
-    
-    if (!usersGrid) {
-        console.error('Users grid not found');
-        return;
-    }
-    
-    // Create user card element
-    const userCard = document.createElement('div');
-    userCard.className = 'user-card';
-    
-    // Get current date for "Joined" info
-    const joinedDate = new Date().toLocaleDateString('en-US', { 
-        month: 'short', 
-        year: 'numeric' 
-    });
-    
-    userCard.innerHTML = `
-        <div class="user-avatar">👤</div>
-        <h4>${userData.firstName} ${userData.lastName}</h4>
-        <p>${userData.email}</p>
-        <span class="tag green">Active</span>
-        <p class="small-text">Reports: 0 | Joined: ${joinedDate}</p>
-    `;
-    
-    // Add to grid
-    usersGrid.appendChild(userCard);
-    console.log('User card added to grid');
-}
-
-// ===================================
-// PASSWORD TOGGLE FUNCTIONS
-// ===================================
-
-function togglePassword() {
-    const passwordInput = document.getElementById('password');
-    const eyeIcon = document.getElementById('eyeIcon');
-    
-    if (passwordInput && eyeIcon) {
-        if (passwordInput.type === 'password') {
-            passwordInput.type = 'text';
-            eyeIcon.textContent = '🙈';
-        } else {
-            passwordInput.type = 'password';
-            eyeIcon.textContent = '👁️';
-        }
-    }
-}
-
-function toggleNewPassword() {
-    const passwordInput = document.getElementById('newPassword');
-    const eyeIcon = document.getElementById('eyeIcon1');
-    
-    if (passwordInput && eyeIcon) {
-        if (passwordInput.type === 'password') {
-            passwordInput.type = 'text';
-            eyeIcon.textContent = '🙈';
-        } else {
-            passwordInput.type = 'password';
-            eyeIcon.textContent = '👁️';
-        }
-    }
-}
-
-function toggleConfirmPassword() {
-    const passwordInput = document.getElementById('confirmPassword');
-    const eyeIcon = document.getElementById('eyeIcon2');
-    
-    if (passwordInput && eyeIcon) {
-        if (passwordInput.type === 'password') {
-            passwordInput.type = 'text';
-            eyeIcon.textContent = '🙈';
-        } else {
-            passwordInput.type = 'password';
-            eyeIcon.textContent = '👁️';
-        }
-    }
-}
-
-// ===================================
-// LOGIN HANDLERS
-// ===================================
-
-// Admin Login Handler
-function handleAdminLogin(e) {
-    e.preventDefault();
-    
-    const email = document.getElementById('email').value;
-    const password = document.getElementById('password').value;
-    
-    // Find matching account
-    const account = testAccounts.find(acc => acc.email === email && acc.password === password);
-    
-    if (account) {
-        // Store user data
-        localStorage.setItem('userType', account.role);
-        localStorage.setItem('userEmail', email);
-        localStorage.setItem('userDepartment', account.department || 'admin');
-        
-        // Check if first login
-        if (account.firstLogin) {
-            localStorage.setItem('requiresPasswordChange', 'true');
-            window.location.href = 'change-password.html';
-        } else {
-            if (account.role === 'admin') {
-                window.location.href = 'admin-dashboard.html';
-            } else {
-                window.location.href = 'law-enforcement-dashboard.html';
+    if (confirmed) {
+        const statusCell = row.querySelectorAll('td')[4];
+        if (statusCell) {
+            statusCell.innerHTML = '<span class="status-badge resolved">Resolved</span>';
+            
+            const actionCell = row.querySelectorAll('td')[6];
+            if (actionCell) {
+                actionCell.innerHTML = `
+                    <button class="btn-action" onclick="window.viewReport(this)">View</button>
+                    <button class="btn-action" onclick="window.archiveReport(this)">Archive</button>
+                `;
             }
         }
-    } else {
-        alert('Invalid email or password');
+        alert(`✓ Report ${reportId} marked as resolved!`);
     }
-}
+};
 
-// Law Enforcement Login Handler
-function handleLawEnforcementLogin(e) {
-    e.preventDefault();
+/**
+ * Archive Report
+ */
+window.archiveReport = function(btn) {
+    console.log('archiveReport clicked');
+    const row = btn.closest('tr');
+    if (!row) return;
     
-    const email = document.getElementById('email').value;
-    const password = document.getElementById('password').value;
+    const reportId = row.querySelector('td').innerText;
+    const confirmed = confirm(`Archive report ${reportId}? This action cannot be undone.`);
     
-    const account = testAccounts.find(acc => acc.email === email && acc.password === password);
-    
-    if (account) {
-        localStorage.setItem('userType', account.role);
-        localStorage.setItem('userEmail', email);
-        localStorage.setItem('userDepartment', account.department);
-        localStorage.setItem('badgeNumber', account.department + '-12345');
-        localStorage.setItem('department', account.department);
-        
-        if (account.firstLogin) {
-            localStorage.setItem('requiresPasswordChange', 'true');
-            window.location.href = 'change-password.html';
-        } else {
-            window.location.href = 'law-enforcement-dashboard.html';
-        }
-    } else {
-        alert('Invalid email or password');
+    if (confirmed) {
+        row.style.opacity = '0.5';
+        row.style.textDecoration = 'line-through';
+        btn.disabled = true;
+        alert(`✓ Report ${reportId} archived successfully!`);
     }
-}
+};
 
-// ===================================
-// CHANGE PASSWORD HANDLER
-// ===================================
+/**
+ * Export Reports
+ */
+window.exportReports = function() {
+    console.log('exportReports clicked');
+    const format = prompt('Export format:\n1. CSV\n2. JSON\n\nEnter 1 or 2:', '1');
+    
+    if (format === '1' || format === 'csv') {
+        window.exportAllReportsCSV();
+    } else if (format === '2' || format === 'json') {
+        window.exportAllReportsJSON();
+    }
+};
 
-function handleChangePassword(e) {
-    e.preventDefault();
+/**
+ * Export All Reports as CSV
+ */
+window.exportAllReportsCSV = function() {
+    console.log('Exporting reports as CSV');
+    const rows = Array.from(document.querySelectorAll('#reportsTableBody tr'));
     
-    const newPassword = document.getElementById('newPassword').value;
-    const confirmPassword = document.getElementById('confirmPassword').value;
-    const errorDiv = document.getElementById('passwordError');
+    const header = ['ID', 'Type', 'Location', 'Date', 'Status', 'Reporter'];
+    const csvRows = [header.join(',')];
     
-    if (newPassword !== confirmPassword) {
-        errorDiv.textContent = 'Passwords do not match!';
-        errorDiv.style.display = 'block';
-        return;
-    }
-    
-    if (newPassword.length < 8) {
-        errorDiv.textContent = 'Password must be at least 8 characters long!';
-        errorDiv.style.display = 'block';
-        return;
-    }
-    
-    const hasNumber = /\d/.test(newPassword);
-    const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(newPassword);
-    
-    if (!hasNumber || !hasSpecial) {
-        errorDiv.textContent = 'Password must contain at least one number and one special character!';
-        errorDiv.style.display = 'block';
-        return;
-    }
-    
-    errorDiv.style.display = 'none';
-    
-    const userType = localStorage.getItem('userType');
-    
-    localStorage.setItem('passwordChanged', 'true');
-    localStorage.removeItem('requiresPasswordChange');
-    
-    alert('Password changed successfully!\n\nWelcome to SafeCity!');
-    
-    if (userType === 'admin') {
-        window.location.href = 'admin-dashboard.html';
-    } else if (userType === 'law-enforcement') {
-        window.location.href = 'law-enforcement-dashboard.html';
-    } else {
-        window.location.href = 'admin-login.html';
-    }
-}
-
-// ===================================
-// DASHBOARD FUNCTIONS
-// ===================================
-
-// Show/Hide Dashboard Sections
-function showSection(sectionId) {
-    console.log('Showing section:', sectionId);
-    
-    const sections = document.querySelectorAll('.content-section');
-    sections.forEach(section => {
-        section.classList.remove('active');
+    rows.forEach(row => {
+        const tds = row.querySelectorAll('td');
+        const data = [
+            tds[0]?.innerText.trim() || '',
+            `"${(tds[1]?.innerText.trim() || '').replace(/"/g, '""')}"`,
+            `"${(tds[2]?.innerText.trim() || '').replace(/"/g, '""')}"`,
+            tds[3]?.innerText.trim() || '',
+            `"${(tds[4]?.innerText.trim() || '').replace(/"/g, '""')}"`,
+            `"${(tds[5]?.innerText.trim() || '').replace(/"/g, '""')}"`
+        ];
+        csvRows.push(data.join(','));
     });
     
-    const navItems = document.querySelectorAll('.nav-item');
-    navItems.forEach(item => {
-        item.classList.remove('active');
-    });
+    const csv = csvRows.join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `crime-reports-${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
     
-    const targetSection = document.getElementById(sectionId);
-    if (targetSection) {
-        targetSection.classList.add('active');
-    }
+    alert('✓ Reports exported as CSV!');
+};
+
+/**
+ * Export All Reports as JSON
+ */
+window.exportAllReportsJSON = function() {
+    console.log('Exporting reports as JSON');
+    const rows = Array.from(document.querySelectorAll('#reportsTableBody tr'));
     
-    const activeNavItem = document.querySelector(`[href="#${sectionId}"]`);
-    if (activeNavItem) {
-        activeNavItem.classList.add('active');
-    }
-    
-    const pageTitleElement = document.getElementById('pageTitle');
-    if (pageTitleElement) {
-        const titles = {
-            'overview': 'Dashboard Overview',
-            'reports': 'Crime Reports',
-            'chatrooms': 'Chat Monitoring',
-            'users': 'User Management',
-            'alerts': 'Emergency Alerts',
-            'settings': 'Settings',
-            'emergencies': 'Active Emergencies',
-            'map': 'Crime Map',
-            'analytics': 'Analytics'
+    const data = rows.map(row => {
+        const tds = row.querySelectorAll('td');
+        return {
+            id: tds[0]?.innerText.trim() || '',
+            type: tds[1]?.innerText.trim() || '',
+            location: tds[2]?.innerText.trim() || '',
+            date: tds[3]?.innerText.trim() || '',
+            status: tds[4]?.innerText.trim() || '',
+            reporter: tds[5]?.innerText.trim() || ''
         };
-        pageTitleElement.textContent = titles[sectionId] || 'Dashboard';
-    }
-}
+    });
+    
+    const json = JSON.stringify(data, null, 2);
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `crime-reports-${new Date().toISOString().split('T')[0]}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    
+    alert('✓ Reports exported as JSON!');
+};
 
-// Chat Selection
+// ===================================
+// CHAT MONITORING - COMPLETE FIX
+// ===================================
+
 let currentChatId = 1;
 
-function selectChat(chatId) {
+/**
+ * Select Chat and Update Display
+ */
+window.selectChat = function(chatId, el) {
+    console.log('selectChat:', chatId);
     currentChatId = chatId;
     
     const chatItems = document.querySelectorAll('.chat-item');
@@ -419,14 +214,19 @@ function selectChat(chatId) {
         item.classList.remove('active');
     });
     
-    if (event && event.currentTarget) {
-        event.currentTarget.classList.add('active');
+    if (el && el.classList) {
+        el.classList.add('active');
     }
     
-    loadChatMessages(chatId);
-}
+    window.loadChatMessages(chatId);
+    window.updateChatWindowHeader(chatId);
+};
 
-function loadChatMessages(chatId) {
+/**
+ * Load Chat Messages
+ */
+window.loadChatMessages = function(chatId) {
+    console.log('loadChatMessages:', chatId);
     const chatMessages = document.getElementById('chatMessages');
     if (!chatMessages) return;
     
@@ -477,25 +277,70 @@ function loadChatMessages(chatId) {
     }).join('');
     
     chatMessages.scrollTop = chatMessages.scrollHeight;
-}
+};
 
-// Take Over Chat
-function takeOverChat() {
-    alert('You are now in control of this chat. The AI assistant has been paused.');
+/**
+ * Update Chat Window Header
+ */
+window.updateChatWindowHeader = function(chatId) {
+    console.log('updateChatWindowHeader:', chatId);
+    const chatUserInfo = document.querySelector('.chat-user-info');
+    if (!chatUserInfo) return;
     
-    const aiStatus = document.querySelector('.ai-status');
-    if (aiStatus) {
-        aiStatus.innerHTML = '<span class="status-indicator red"></span> Admin Live Chat - You are responding';
-        aiStatus.style.background = 'rgba(220, 38, 38, 0.1)';
+    const chatData = {
+        1: { userId: '#1234', status: 'Active now - AI Assistant responding', urgent: false },
+        2: { userId: '#5678', status: 'EMERGENCY - Urgent Response Required', urgent: true },
+        3: { userId: '#9012', status: 'Resolved - Chat Closed', urgent: false }
+    };
+    
+    const data = chatData[chatId] || chatData[1];
+    
+    chatUserInfo.innerHTML = `
+        <h3>User ${data.userId}</h3>
+        <p style="${data.urgent ? 'color: var(--emergency); font-weight: 600;' : ''}">${data.status}</p>
+    `;
+    
+    const takeOverBtn = document.querySelector('.chat-actions .btn-action:first-child');
+    const escalateBtn = document.querySelector('.chat-actions .btn-action.danger');
+    
+    if (takeOverBtn) {
+        takeOverBtn.disabled = data.urgent;
+        takeOverBtn.style.opacity = data.urgent ? '0.5' : '1';
     }
-}
+    
+    if (escalateBtn) {
+        escalateBtn.disabled = !data.urgent;
+        escalateBtn.style.opacity = data.urgent ? '1' : '0.5';
+    }
+};
 
-// Escalate Chat
-function escalateChat() {
+/**
+ * Take Over Chat
+ */
+window.takeOverChat = function() {
+    console.log('takeOverChat called');
+    const confirmed = confirm('Take over this chat? The AI assistant will be paused.');
+    
+    if (confirmed) {
+        alert('✓ You are now in control of this chat.\n\nAI assistant has been paused.');
+        
+        const aiStatus = document.querySelector('.ai-status');
+        if (aiStatus) {
+            aiStatus.innerHTML = '<span class="status-indicator red"></span> Admin Live Chat - You are responding';
+            aiStatus.style.background = 'rgba(220, 38, 38, 0.1)';
+        }
+    }
+};
+
+/**
+ * Escalate Chat
+ */
+window.escalateChat = function() {
+    console.log('escalateChat called');
     const confirmed = confirm('Escalate this chat to JDF, JCDF, and National Security?');
     
     if (confirmed) {
-        alert('Chat escalated successfully!\n\nNotifications sent to:\n- Jamaica Defence Force (JDF)\n- Jamaica Constabulary Force (JCDF)\n- National Security\n- Admin Team');
+        alert('✓ Chat escalated successfully!\n\nNotifications sent to:\n- Jamaica Defence Force (JDF)\n- Jamaica Constabulary Force (JCDF)\n- National Security');
         
         const aiStatus = document.querySelector('.ai-status');
         if (aiStatus) {
@@ -503,24 +348,32 @@ function escalateChat() {
             aiStatus.style.background = 'rgba(220, 38, 38, 0.2)';
         }
     }
-}
+};
 
-// Send Message
-function sendMessage() {
+/**
+ * Send Message
+ */
+window.sendMessage = function() {
+    console.log('sendMessage called');
     const messageInput = document.getElementById('adminMessage');
     if (!messageInput) return;
     
     const messageText = messageInput.value.trim();
-    if (!messageText) return;
+    if (!messageText) {
+        alert('Please enter a message');
+        return;
+    }
     
     const chatMessages = document.getElementById('chatMessages');
     if (!chatMessages) return;
+    
+    const time = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
     
     const messageHTML = `
         <div class="message user">
             <div class="message-content">
                 <p>${messageText}</p>
-                <span class="message-time">${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                <span class="message-time">${time}</span>
             </div>
         </div>
     `;
@@ -528,164 +381,140 @@ function sendMessage() {
     chatMessages.innerHTML += messageHTML;
     messageInput.value = '';
     chatMessages.scrollTop = chatMessages.scrollHeight;
-}
-
-// Logout
-function logout() {
-    const confirmed = confirm('Are you sure you want to logout?');
-    
-    if (confirmed) {
-        localStorage.clear();
-        window.location.href = 'index.html';
-    }
-}
-
-// Real-time notifications simulation
-function simulateNotifications() {
-    const notificationBadge = document.querySelector('.notification-badge');
-    if (!notificationBadge) return;
-    
-    setInterval(() => {
-        const currentCount = parseInt(notificationBadge.textContent);
-        if (Math.random() > 0.7) {
-            notificationBadge.textContent = currentCount + 1;
-        }
-    }, 30000);
-}
+    console.log('Message sent');
+};
 
 // ===================================
-// EVENT LISTENERS & INITIALIZATION
+// ADD USER MODAL FUNCTIONALITY
 // ===================================
 
-/**
- * Close modal when clicking outside of it
- */
-window.onclick = function(event) {
+function openAddUserModal() {
+    console.log('openAddUserModal called');
     const modal = document.getElementById('addUserModal');
-    if (event.target === modal) {
-        closeAddUserModal();
+    if (modal) {
+        modal.classList.add('active');
+        document.body.style.overflow = 'hidden';
+        console.log('Modal opened successfully');
     }
 }
 
-/**
- * Close modal with Escape key
- */
-document.addEventListener('keydown', function(event) {
-    if (event.key === 'Escape') {
-        const modal = document.getElementById('addUserModal');
-        if (modal && modal.classList.contains('active')) {
-            closeAddUserModal();
-        }
+function closeAddUserModal() {
+    console.log('closeAddUserModal called');
+    const modal = document.getElementById('addUserModal');
+    if (modal) {
+        modal.classList.remove('active');
     }
-});
+    document.body.style.overflow = 'auto';
+    
+    const form = document.getElementById('addUserForm');
+    if (form) {
+        form.reset();
+    }
+    
+    const strengthBar = document.getElementById('passwordStrengthBar');
+    if (strengthBar) {
+        strengthBar.className = 'password-strength-bar';
+    }
+}
 
-/**
- * Initialize on page load
- */
-window.addEventListener('DOMContentLoaded', function() {
-    console.log('=== SafeCity Dashboard Initializing ===');
+function checkPasswordStrength() {
+    const password = document.getElementById('password');
+    const strengthBar = document.getElementById('passwordStrengthBar');
     
-    const currentPage = window.location.pathname;
+    if (!password || !strengthBar) return;
     
-    // Check if on change password page
-    if (currentPage.includes('change-password')) {
-        const requiresPasswordChange = localStorage.getItem('requiresPasswordChange');
-        if (!requiresPasswordChange) {
-            window.location.href = 'admin-login.html';
-        }
-        
-        const changePasswordForm = document.getElementById('changePasswordForm');
-        if (changePasswordForm) {
-            changePasswordForm.addEventListener('submit', handleChangePassword);
-        }
+    const passwordValue = password.value;
+    
+    strengthBar.className = 'password-strength-bar';
+    
+    let strength = 0;
+    
+    if (passwordValue.length >= 8) strength++;
+    if (passwordValue.match(/[a-z]/) && passwordValue.match(/[A-Z]/)) strength++;
+    if (passwordValue.match(/[0-9]/)) strength++;
+    if (passwordValue.match(/[^a-zA-Z0-9]/)) strength++;
+    
+    if (strength >= 4) {
+        strengthBar.classList.add('strong');
+    } else if (strength >= 2) {
+        strengthBar.classList.add('medium');
+    } else if (strength >= 1) {
+        strengthBar.classList.add('weak');
+    }
+}
+
+function handleAddUser(event) {
+    event.preventDefault();
+    console.log('handleAddUser called');
+    
+    const password = document.getElementById('password').value;
+    const confirmPassword = document.getElementById('confirmPassword').value;
+    
+    if (password !== confirmPassword) {
+        alert('Passwords do not match! Please re-enter your passwords.');
+        return;
     }
     
-    // Check if on admin login page
-    if (currentPage.includes('admin-login')) {
-        const adminLoginForm = document.getElementById('adminLoginForm');
-        if (adminLoginForm) {
-            adminLoginForm.addEventListener('submit', handleAdminLogin);
-        }
+    if (password.length < 8) {
+        alert('Password must be at least 8 characters long.');
+        return;
     }
     
-    // Check if on law enforcement login page
-    if (currentPage.includes('law-enforcement-login')) {
-        const lawEnforcementLoginForm = document.getElementById('lawEnforcementLoginForm');
-        if (lawEnforcementLoginForm) {
-            lawEnforcementLoginForm.addEventListener('submit', handleLawEnforcementLogin);
-        }
+    const formData = {
+        role: document.querySelector('input[name="role"]:checked').value,
+        firstName: document.getElementById('firstName').value,
+        lastName: document.getElementById('lastName').value,
+        email: document.getElementById('email').value,
+        badgeId: document.getElementById('badgeId').value,
+        department: document.getElementById('department').value,
+        username: document.getElementById('username').value,
+        password: password,
+        accessLevel: document.getElementById('accessLevel').value,
+        dateCreated: new Date().toISOString()
+    };
+    
+    console.log('New User Data:', formData);
+    
+    const roleText = formData.role === 'admin' ? 'System Admin' : 'Law Enforcement Personnel';
+    alert(`✓ User created successfully!\n\nName: ${formData.firstName} ${formData.lastName}\nRole: ${roleText}\nEmail: ${formData.email}\nUsername: ${formData.username}`);
+    
+    addUserCardToGrid(formData);
+    
+    closeAddUserModal();
+}
+
+function addUserCardToGrid(userData) {
+    const usersGrid = document.querySelector('.users-grid');
+    
+    if (!usersGrid) {
+        console.error('Users grid not found');
+        return;
     }
     
-    // Check if on dashboard
-    if (currentPage.includes('dashboard')) {
-        const userType = localStorage.getItem('userType');
-        const userEmail = localStorage.getItem('userEmail');
-        
-        if (!userType || !userEmail) {
-            window.location.href = 'index.html';
-            return;
-        }
-        
-        // Display user info
-        const userNameElement = document.getElementById('userName');
-        if (userNameElement) {
-            if (userType === 'law-enforcement') {
-                const badgeNumber = localStorage.getItem('badgeNumber');
-                const department = localStorage.getItem('department');
-                userNameElement.textContent = `Officer ${badgeNumber || ''}`;
-                
-                const deptElement = document.getElementById('userDept');
-                if (deptElement) {
-                    deptElement.textContent = department ? department.toUpperCase() : '';
-                }
-            } else {
-                userNameElement.textContent = userEmail;
-            }
-        }
-        
-        // Check if modal exists
-        const modal = document.getElementById('addUserModal');
-        if (modal) {
-            console.log('✓ Modal found on page');
-        } else {
-            console.warn('⚠ Modal NOT found on page');
-        }
-    }
+    const userCard = document.createElement('div');
+    userCard.className = 'user-card';
     
-    // Initialize notifications
-    simulateNotifications();
-    
-    // Initialize filter buttons
-    const filterButtons = document.querySelectorAll('.filter-btn');
-    filterButtons.forEach(button => {
-        button.addEventListener('click', function() {
-            filterButtons.forEach(btn => btn.classList.remove('active'));
-            this.classList.add('active');
-        });
+    const joinedDate = new Date().toLocaleDateString('en-US', { 
+        month: 'short', 
+        year: 'numeric' 
     });
     
-    // Handle Enter key for messages
-    const messageInput = document.getElementById('adminMessage');
-    if (messageInput) {
-        messageInput.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                sendMessage();
-            }
-        });
-    }
+    userCard.innerHTML = `
+        <div class="user-avatar">👤</div>
+        <h4>${userData.firstName} ${userData.lastName}</h4>
+        <p>${userData.email}</p>
+        <span class="tag green">Active</span>
+        <p class="small-text">Reports: 0 | Joined: ${joinedDate}</p>
+    `;
     
-    console.log('=== SafeCity Dashboard Ready ===');
-});
+    usersGrid.appendChild(userCard);
+    console.log('User card added to grid');
+}
 
-console.log('SafeCity Script Loaded Successfully');
 // ===================================
 // CREATE ALERT MODAL FUNCTIONALITY
 // ===================================
 
-/**
- * Opens the Create Alert modal
- */
 function openCreateAlertModal() {
     console.log('openCreateAlertModal called');
     const modal = document.getElementById('createAlertModal');
@@ -693,14 +522,9 @@ function openCreateAlertModal() {
         modal.classList.add('active');
         document.body.style.overflow = 'hidden';
         console.log('Create Alert Modal opened successfully');
-    } else {
-        console.error('ERROR: Create Alert Modal element not found!');
     }
 }
 
-/**
- * Closes the Create Alert modal and resets the form
- */
 function closeCreateAlertModal() {
     console.log('closeCreateAlertModal called');
     const modal = document.getElementById('createAlertModal');
@@ -709,32 +533,24 @@ function closeCreateAlertModal() {
     }
     document.body.style.overflow = 'auto';
     
-    // Reset form
     const form = document.getElementById('createAlertForm');
     if (form) {
         form.reset();
     }
 }
 
-/**
- * Handles form submission for creating alert
- * @param {Event} event - Form submit event
- */
 function handleCreateAlert(event) {
     event.preventDefault();
     console.log('handleCreateAlert called');
     
-    // Get selected agencies
     const agencyCheckboxes = document.querySelectorAll('input[name="agencies"]:checked');
     const selectedAgencies = Array.from(agencyCheckboxes).map(cb => cb.value);
     
-    // Validate at least one agency is selected
     if (selectedAgencies.length === 0) {
         alert('Please select at least one agency to notify.');
         return;
     }
     
-    // Collect form data
     const alertData = {
         priority: document.querySelector('input[name="priority"]:checked').value,
         title: document.getElementById('alertTitle').value,
@@ -753,27 +569,8 @@ function handleCreateAlert(event) {
         alertId: 'ALT-' + Date.now()
     };
     
-    // Log the data (in production, send to backend)
     console.log('New Alert Data:', alertData);
     
-    // TODO: Send data to backend API
-    // Example:
-    // fetch('/api/alerts/create', {
-    //     method: 'POST',
-    //     headers: { 'Content-Type': 'application/json' },
-    //     body: JSON.stringify(alertData)
-    // })
-    // .then(response => response.json())
-    // .then(data => {
-    //     addAlertToList(alertData);
-    //     closeCreateAlertModal();
-    //     showAlertNotification(alertData);
-    // })
-    // .catch(error => {
-    //     alert('Failed to create alert. Please try again.');
-    // });
-    
-    // Format priority for display
     const priorityText = alertData.priority.charAt(0).toUpperCase() + alertData.priority.slice(1);
     const priorityEmoji = {
         'critical': '🚨',
@@ -781,24 +578,14 @@ function handleCreateAlert(event) {
         'medium': '⚡'
     }[alertData.priority];
     
-    // Show success message with summary
     const agenciesList = selectedAgencies.map(a => `- ${a}`).join('\n');
     alert(`${priorityEmoji} ALERT CREATED SUCCESSFULLY!\n\nPriority: ${priorityText}\nTitle: ${alertData.title}\nLocation: ${alertData.location}, ${getParishName(alertData.parish)}\n\nNotifying:\n${agenciesList}\n\nAlert ID: ${alertData.alertId}`);
     
-    // Add alert to the list immediately
     addAlertToList(alertData);
-    
-    // Show notification banner
     showAlertNotification(alertData);
-    
-    // Close modal
     closeCreateAlertModal();
 }
 
-/**
- * Adds a new alert card to the alerts list
- * @param {Object} alertData - Alert data object
- */
 function addAlertToList(alertData) {
     const alertsList = document.querySelector('.alerts-list');
     
@@ -807,21 +594,17 @@ function addAlertToList(alertData) {
         return;
     }
     
-    // Create alert card element
     const alertCard = document.createElement('div');
     alertCard.className = 'alert-card urgent';
     
-    // Get time ago
     const timeAgo = 'Just now';
     
-    // Get priority icon
     const priorityIcon = {
         'critical': '🚨',
         'high': '⚠️',
         'medium': '⚡'
     }[alertData.priority] || '🚨';
     
-    // Format type for display
     const typeDisplay = alertData.type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
     
     alertCard.innerHTML = `
@@ -835,26 +618,19 @@ function addAlertToList(alertData) {
         ${alertData.suspectDescription ? `<p><strong>Suspect:</strong> ${alertData.suspectDescription}</p>` : ''}
         ${alertData.vehicleInfo ? `<p><strong>Vehicle:</strong> ${alertData.vehicleInfo}</p>` : ''}
         <div class="alert-actions">
-            <button class="btn btn-danger" onclick="viewAlertDetails('${alertData.alertId}')">View Details</button>
-            <button class="btn btn-secondary" onclick="updateAlertStatus('${alertData.alertId}')">Update Status</button>
+            <button class="btn btn-danger" onclick="window.viewAlertDetails('${alertData.alertId}')">View Details</button>
+            <button class="btn btn-secondary" onclick="window.updateAlertStatus('${alertData.alertId}')">Update Status</button>
         </div>
     `;
     
-    // Add to top of list
     alertsList.insertBefore(alertCard, alertsList.firstChild);
     console.log('Alert card added to list');
 }
 
-/**
- * Shows a notification banner for the new alert
- * @param {Object} alertData - Alert data object
- */
 function showAlertNotification(alertData) {
-    // Find the alerts section
     const alertsSection = document.getElementById('alerts');
     if (!alertsSection) return;
     
-    // Create notification banner
     const banner = document.createElement('div');
     banner.className = 'alert-banner urgent';
     banner.innerHTML = `
@@ -865,12 +641,10 @@ function showAlertNotification(alertData) {
         </div>
     `;
     
-    // Insert at top of section
     const sectionHeader = alertsSection.querySelector('.section-header');
     if (sectionHeader) {
         sectionHeader.insertAdjacentElement('afterend', banner);
         
-        // Auto-remove after 10 seconds
         setTimeout(() => {
             banner.style.opacity = '0';
             setTimeout(() => banner.remove(), 300);
@@ -878,11 +652,6 @@ function showAlertNotification(alertData) {
     }
 }
 
-/**
- * Helper function to get parish display name
- * @param {string} parishValue - Parish value from form
- * @returns {string} Display name
- */
 function getParishName(parishValue) {
     const parishNames = {
         'kingston': 'Kingston',
@@ -903,62 +672,23 @@ function getParishName(parishValue) {
     return parishNames[parishValue] || parishValue;
 }
 
-/**
- * View alert details (placeholder function)
- * @param {string} alertId - Alert ID
- */
-function viewAlertDetails(alertId) {
-    alert(`Viewing details for Alert: ${alertId}\n\nThis would open a detailed view of the alert.`);
+window.viewAlertDetails = function(alertId) {
+    alert(`Viewing details for Alert: ${alertId}`);
     console.log('View alert details:', alertId);
-}
+};
 
-/**
- * Update alert status (placeholder function)
- * @param {string} alertId - Alert ID
- */
-function updateAlertStatus(alertId) {
+window.updateAlertStatus = function(alertId) {
     const newStatus = prompt('Enter new status:\n- Active\n- Dispatched\n- Resolved\n- Cancelled');
     if (newStatus) {
         alert(`Alert ${alertId} status updated to: ${newStatus}`);
         console.log('Update alert status:', alertId, newStatus);
     }
-}
+};
 
-// Update the window.onclick to handle both modals
-const originalWindowClick = window.onclick;
-window.onclick = function(event) {
-    const addUserModal = document.getElementById('addUserModal');
-    const createAlertModal = document.getElementById('createAlertModal');
-    
-    if (event.target === addUserModal) {
-        closeAddUserModal();
-    }
-    if (event.target === createAlertModal) {
-        closeCreateAlertModal();
-    }
-}
-
-// Update the keydown listener to handle both modals
-document.addEventListener('keydown', function(event) {
-    if (event.key === 'Escape') {
-        const addUserModal = document.getElementById('addUserModal');
-        const createAlertModal = document.getElementById('createAlertModal');
-        
-        if (addUserModal && addUserModal.classList.contains('active')) {
-            closeAddUserModal();
-        }
-        if (createAlertModal && createAlertModal.classList.contains('active')) {
-            closeCreateAlertModal();
-        }
-    }
-});
-
-console.log('Create Alert Modal functions loaded');
 // ===================================
-// ALERT ACTION MODALS FUNCTIONALITY
+// ALERT ACTION MODALS
 // ===================================
 
-// Mock alert data (in production, this would come from your database)
 const mockAlertData = {
     'alert-5678': {
         id: 'ALT-5678',
@@ -1001,16 +731,11 @@ const mockAlertData = {
     }
 };
 
-// ===================================
-// VIEW DETAILS MODAL
-// ===================================
-
-function viewAlertDetails(alertId) {
+window.viewAlertDetails = function(alertId) {
     console.log('Viewing details for:', alertId);
     const modal = document.getElementById('viewDetailsModal');
     const content = document.getElementById('alertDetailsContent');
     
-    // Get alert data (in production, fetch from server)
     const alert = mockAlertData[alertId] || mockAlertData['alert-5678'];
     
     content.innerHTML = `
@@ -1071,7 +796,7 @@ function viewAlertDetails(alertId) {
         </div>
         ` : ''}
 
-        <h3 class="detail-section-title">🚔 Response Status</h3>
+        <h3 class="detail-section-title">🚓 Response Status</h3>
         <div class="detail-row">
             <div class="detail-label">Agencies Notified:</div>
             <div class="detail-value">${alert.agencies.join(', ')}</div>
@@ -1086,19 +811,15 @@ function viewAlertDetails(alertId) {
     
     modal.classList.add('active');
     document.body.style.overflow = 'hidden';
-}
+};
 
-function closeViewDetailsModal() {
+window.closeViewDetailsModal = function() {
     const modal = document.getElementById('viewDetailsModal');
     modal.classList.remove('active');
     document.body.style.overflow = 'auto';
-}
+};
 
-// ===================================
-// CONTACT USER MODAL
-// ===================================
-
-function contactUser(alertId) {
+window.contactUser = function(alertId) {
     console.log('Contacting user for:', alertId);
     const modal = document.getElementById('contactUserModal');
     const content = document.getElementById('userContactDetails');
@@ -1114,57 +835,50 @@ function contactUser(alertId) {
     
     modal.classList.add('active');
     document.body.style.overflow = 'hidden';
-}
+};
 
-function closeContactUserModal() {
+window.closeContactUserModal = function() {
     const modal = document.getElementById('contactUserModal');
     modal.classList.remove('active');
     document.body.style.overflow = 'auto';
-}
+};
 
-function initiateCall() {
+window.initiateCall = function() {
     alert('📞 Initiating voice call to user...\n\nConnecting to: +1 876-555-0123');
     console.log('Initiating call');
-}
+};
 
-function sendSMS() {
+window.sendSMS = function() {
     alert('💬 SMS message sent successfully!\n\nUser will receive your message shortly.');
     console.log('Sending SMS');
-}
+};
 
-function openChat() {
+window.openChat = function() {
     alert('💭 Opening live chat with user...\n\nRedirecting to chat interface.');
     console.log('Opening chat');
-    // In production: window.location.href = 'chat.html?userId=5678';
-}
+};
 
-function sendQuickMessage() {
+window.sendQuickMessage = function() {
     const message = document.getElementById('contactMessage').value;
     if (!message.trim()) {
         alert('Please enter a message.');
         return;
     }
     alert(`✓ Message sent successfully!\n\n"${message}"`);
-    closeContactUserModal();
-}
+    window.closeContactUserModal();
+};
 
-// ===================================
-// REVIEW CHAT MODAL
-// ===================================
-
-function reviewChat(chatId) {
+window.reviewChat = function(chatId) {
     console.log('Reviewing chat:', chatId);
     const modal = document.getElementById('reviewChatModal');
     const content = document.getElementById('chatTranscriptContent');
     
     const chat = mockAlertData[chatId] || mockAlertData['chat-9012'];
     
-    // Update chat info
     document.getElementById('reviewChatId').textContent = chat.chatId || chatId;
     document.getElementById('reviewUserId').textContent = chat.userId;
     document.getElementById('chatDuration').textContent = chat.duration;
     
-    // Build transcript
     let transcriptHTML = '';
     chat.transcript.forEach(msg => {
         const messageClass = msg.flagged ? 'transcript-message flagged' : `transcript-message ${msg.type}`;
@@ -1184,37 +898,33 @@ function reviewChat(chatId) {
     
     modal.classList.add('active');
     document.body.style.overflow = 'hidden';
-}
+};
 
-function closeReviewChatModal() {
+window.closeReviewChatModal = function() {
     const modal = document.getElementById('reviewChatModal');
     modal.classList.remove('active');
     document.body.style.overflow = 'auto';
-}
+};
 
-function markAsFalsePositive() {
+window.markAsFalsePositive = function() {
     const notes = document.getElementById('reviewNotes').value;
     const confirmed = confirm('Mark this alert as a false positive?\n\nThis will dismiss the alert and update the AI training data.');
     
     if (confirmed) {
         console.log('Marked as false positive. Notes:', notes);
         alert('✓ Alert marked as false positive.\n\nAI system will be updated to improve future detection.');
-        closeReviewChatModal();
+        window.closeReviewChatModal();
     }
-}
+};
 
-function escalateFromReview() {
-    closeReviewChatModal();
+window.escalateFromReview = function() {
+    window.closeReviewChatModal();
     setTimeout(() => {
-        openEscalateModal('chat-9012');
+        window.openEscalateModal('chat-9012');
     }, 300);
-}
+};
 
-// ===================================
-// ESCALATE MODAL
-// ===================================
-
-function openEscalateModal(alertId) {
+window.openEscalateModal = function(alertId) {
     console.log('Opening escalation for:', alertId);
     const modal = document.getElementById('escalateModal');
     const content = document.getElementById('escalationAlertInfo');
@@ -1231,15 +941,15 @@ function openEscalateModal(alertId) {
     
     modal.classList.add('active');
     document.body.style.overflow = 'hidden';
-}
+};
 
-function closeEscalateModal() {
+window.closeEscalateModal = function() {
     const modal = document.getElementById('escalateModal');
     modal.classList.remove('active');
     document.body.style.overflow = 'auto';
-}
+};
 
-function confirmEscalation() {
+window.confirmEscalation = function() {
     const agencies = Array.from(document.querySelectorAll('input[name="escalateAgencies"]:checked')).map(cb => cb.value);
     const priority = document.getElementById('escalationPriority').value;
     const reason = document.getElementById('escalationReason').value;
@@ -1262,56 +972,206 @@ function confirmEscalation() {
     if (confirmed) {
         console.log('Escalation confirmed', { agencies, priority, reason, dispatchUnits, notifyCommander });
         alert(`🚨 ESCALATION SUCCESSFUL\n\nAgencies notified: ${agencies.join(', ')}\nPriority: ${priority}\n\nResponse units are being deployed.`);
-        closeEscalateModal();
+        window.closeEscalateModal();
+    }
+};
+
+// ===================================
+// DASHBOARD FUNCTIONS
+// ===================================
+
+function showSection(sectionId) {
+    console.log('Showing section:', sectionId);
+    
+    const sections = document.querySelectorAll('.content-section');
+    sections.forEach(section => {
+        section.classList.remove('active');
+    });
+    
+    const navItems = document.querySelectorAll('.nav-item');
+    navItems.forEach(item => {
+        item.classList.remove('active');
+    });
+    
+    const targetSection = document.getElementById(sectionId);
+    if (targetSection) {
+        targetSection.classList.add('active');
+    }
+    
+    const activeNavItem = document.querySelector(`[href="#${sectionId}"]`);
+    if (activeNavItem) {
+        activeNavItem.classList.add('active');
+    }
+    
+    const pageTitleElement = document.getElementById('pageTitle');
+    if (pageTitleElement) {
+        const titles = {
+            'overview': 'Dashboard Overview',
+            'reports': 'Crime Reports',
+            'chatrooms': 'Chat Monitoring',
+            'users': 'User Management',
+            'alerts': 'Emergency Alerts',
+            'settings': 'Settings'
+        };
+        pageTitleElement.textContent = titles[sectionId] || 'Dashboard';
     }
 }
 
-// Update window.onclick to handle all modals
+function logout() {
+    const confirmed = confirm('Are you sure you want to logout?');
+    
+    if (confirmed) {
+        localStorage.clear();
+        window.location.href = 'index.html';
+    }
+}
+
+function simulateNotifications() {
+    const notificationBadge = document.querySelector('.notification-badge');
+    if (!notificationBadge) return;
+    
+    setInterval(() => {
+        const currentCount = parseInt(notificationBadge.textContent);
+        if (Math.random() > 0.7) {
+            notificationBadge.textContent = currentCount + 1;
+        }
+    }, 30000);
+}
+
+// ===================================
+// CHAT DETAILS ESCALATION BUTTONS
+// ===================================
+
+window.notifyJDF = function() {
+    console.log('Notify JDF clicked');
+    alert('✓ Jamaica Defence Force (JDF) has been notified.\n\nResponse units are being coordinated.');
+};
+
+window.notifyJCDF = function() {
+    console.log('Notify JCDF clicked');
+    alert('✓ Jamaica Constabulary Force (JCDF) has been notified.\n\nResponse units are being coordinated.');
+};
+
+window.notifyNationalSecurity = function() {
+    console.log('Notify National Security clicked');
+    alert('✓ National Security Agency has been notified.\n\nThis is a critical escalation.');
+};
+
+window.takeOverChatFromDetails = function() {
+    console.log('Take Over Chat from details clicked');
+    const confirmed = confirm('Take over this chat? The AI assistant will be paused and you will respond directly.');
+    
+    if (confirmed) {
+        alert('✓ You are now in control of this chat.\n\nAI assistant has been paused.');
+        
+        const aiStatus = document.querySelector('.ai-status');
+        if (aiStatus) {
+            aiStatus.innerHTML = '<span class="status-indicator red"></span> Admin Live Chat - You are responding';
+            aiStatus.style.background = 'rgba(220, 38, 38, 0.1)';
+        }
+    }
+};
+
+// ===================================
+// INITIALIZATION
+// ===================================
+
+window.addEventListener('DOMContentLoaded', function() {
+    console.log('=== SafeCity Dashboard Initializing ===');
+    
+    const currentPage = window.location.pathname;
+    
+    if (currentPage.includes('dashboard')) {
+        const userType = localStorage.getItem('userType');
+        const userEmail = localStorage.getItem('userEmail');
+        
+        if (!userType || !userEmail) {
+            window.location.href = 'index.html';
+            return;
+        }
+        
+        const userNameElement = document.getElementById('userName');
+        if (userNameElement) {
+            userNameElement.textContent = userEmail;
+        }
+    }
+    
+    simulateNotifications();
+    
+    const filterButtons = document.querySelectorAll('.filter-btn');
+    filterButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            filterButtons.forEach(btn => btn.classList.remove('active'));
+            this.classList.add('active');
+        });
+    });
+    
+    const messageInput = document.getElementById('adminMessage');
+    if (messageInput) {
+        messageInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                window.sendMessage();
+            }
+        });
+    }
+    
+    // Attach handlers to escalation action buttons
+    const notifyJDFBtn = document.querySelector('.detail-section .btn-full:nth-of-type(1)');
+    const notifyJCDFBtn = document.querySelector('.detail-section .btn-full:nth-of-type(2)');
+    const notifyNSBtn = document.querySelector('.detail-section .btn-full:nth-of-type(3)');
+    const takeOverBtn = document.querySelector('.detail-section .btn-full:nth-of-type(4)');
+    
+    if (notifyJDFBtn) notifyJDFBtn.onclick = window.notifyJDF;
+    if (notifyJCDFBtn) notifyJCDFBtn.onclick = window.notifyJCDF;
+    if (notifyNSBtn) notifyNSBtn.onclick = window.notifyNationalSecurity;
+    if (takeOverBtn) takeOverBtn.onclick = window.takeOverChatFromDetails;
+    
+    console.log('=== SafeCity Dashboard Ready ===');
+});
+
+// Close modals on background click
 window.onclick = function(event) {
-    const modals = ['addUserModal', 'createAlertModal', 'viewDetailsModal', 'contactUserModal', 'reviewChatModal', 'escalateModal'];
+    const modals = [
+        'reportDetailsModal',
+        'addUserModal',
+        'createAlertModal',
+        'viewDetailsModal',
+        'contactUserModal',
+        'reviewChatModal',
+        'escalateModal'
+    ];
+    
     modals.forEach(modalId => {
         const modal = document.getElementById(modalId);
         if (event.target === modal) {
             modal.classList.remove('active');
-            document.body.style.overflow = 'auto';
+            document.body.style.overflow = '';
         }
     });
-}
+};
 
-// Update keydown listener for all modals
-document.addEventListener('keydown', function(event) {
-    if (event.key === 'Escape') {
-        const modals = ['addUserModal', 'createAlertModal', 'viewDetailsModal', 'contactUserModal', 'reviewChatModal', 'escalateModal'];
+// Close modals on Escape
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        const modals = [
+            'reportDetailsModal',
+            'addUserModal',
+            'createAlertModal',
+            'viewDetailsModal',
+            'contactUserModal',
+            'reviewChatModal',
+            'escalateModal'
+        ];
+        
         modals.forEach(modalId => {
             const modal = document.getElementById(modalId);
             if (modal && modal.classList.contains('active')) {
                 modal.classList.remove('active');
-                document.body.style.overflow = 'auto';
+                document.body.style.overflow = '';
             }
         });
     }
 });
 
-console.log('Alert action modals loaded successfully');
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+console.log('SafeCity Script Loaded Successfully');

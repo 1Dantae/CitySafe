@@ -208,7 +208,7 @@
                 <div class="chat-monitoring-grid">
                     <!-- Chat List -->
                     <div class="chat-list">
-                        <div class="chat-item active" onclick="selectChat(1)">
+                        <div class="chat-item active" onclick="selectChat(1, this)">
                             <div class="chat-avatar">👤</div>
                             <div class="chat-info">
                                 <div class="chat-header">
@@ -222,8 +222,8 @@
                                 </div>
                             </div>
                         </div>
-
-                        <div class="chat-item urgent" onclick="selectChat(2)">
+                    
+                        <div class="chat-item urgent" onclick="selectChat(2, this)">
                             <div class="chat-avatar">🚨</div>
                             <div class="chat-info">
                                 <div class="chat-header">
@@ -237,8 +237,8 @@
                                 </div>
                             </div>
                         </div>
-
-                        <div class="chat-item" onclick="selectChat(3)">
+                    
+                        <div class="chat-item" onclick="selectChat(3, this)">
                             <div class="chat-avatar">👤</div>
                             <div class="chat-info">
                                 <div class="chat-header">
@@ -252,6 +252,8 @@
                             </div>
                         </div>
                     </div>
+                
+                   
 
                     <!-- Chat Window -->
                     <div class="chat-window">
@@ -558,6 +560,27 @@
             </div>
         </div>
     </div>
+
+    <!-- Report Details Modal -->
+    <div id="reportDetailsModal" class="modal" aria-hidden="true">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Report Details</h3>
+                <button class="close-btn" onclick="closeReportDetailsModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="details-grid">
+                    <div><strong>ID:</strong> <span id="reportId">-</span></div>
+                    <div><strong>Type:</strong> <span id="reportType">-</span></div>
+                    <div><strong>Location:</strong> <span id="reportLocation">-</span></div>
+                    <div><strong>Date:</strong> <span id="reportDate">-</span></div>
+                    <div><strong>Status:</strong> <span id="reportStatus">-</span></div>
+                    <div><strong>Reporter:</strong> <span id="reportReporter">-</span></div>
+                </div>
+
+                <hr>
+
+                
 
     <!-- Create Alert Modal -->
     <div id="createAlertModal" class="modal">
